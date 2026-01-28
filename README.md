@@ -2,6 +2,8 @@
 
 A sandbox for exploring visual design systems, widgets, and layouts.
 
+This is rough work often done spur of the moment. Nothing is typically functional. It may look like crap. It's just a place to try stuff out.
+
 ---
 
 ## Experiments
