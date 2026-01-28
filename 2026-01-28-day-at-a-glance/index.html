@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Day at a Glance - Design Experiment</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a1a1a;
+            color: #fff;
+            padding: 40px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 48px;
+        }
+
+        h1 {
+            font-size: 56px;
+            font-weight: 700;
+            line-height: 1.1;
+            margin-bottom: 16px;
+            letter-spacing: -1px;
+        }
+
+        .subtitle {
+            font-size: 18px;
+            font-weight: 400;
+            color: #a0a0a0;
+            line-height: 1.5;
+        }
+
+        .timeline {
+            position: relative;
+            margin-top: 60px;
+        }
+
+        .timeline-line {
+            position: absolute;
+            left: 44px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom,
+                transparent 0%,
+                #444 5%,
+                #444 95%,
+                transparent 100%);
+        }
+
+        .hour-marker {
+            position: relative;
+            margin-bottom: 8px;
+            padding-left: 100px;
+        }
+
+        .hour-label {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 48px;
+            font-weight: 700;
+            color: #333;
+            letter-spacing: -2px;
+        }
+
+        .time-indicator {
+            position: absolute;
+            left: 0;
+            top: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #ff6b6b;
+            background: #1a1a1a;
+            padding: 2px 4px;
+        }
+
+        .event-card {
+            position: relative;
+            background: #2a2a2a;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .event-card.completed {
+            opacity: 0.6;
+        }
+
+        .event-card.completed .event-title {
+            text-decoration: line-through;
+            color: #666;
+        }
+
+        .event-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .event-icon.workout {
+            background: #666;
+        }
+
+        .event-icon.shower {
+            background: #3b82f6;
+        }
+
+        .event-icon.breakfast {
+            background: #f59e0b;
+        }
+
+        .event-icon.email {
+            background: #a855f7;
+        }
+
+        .event-details {
+            flex: 1;
+        }
+
+        .event-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .event-time {
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 2px;
+        }
+
+        .event-duration {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .checkbox {
+            width: 24px;
+            height: 24px;
+            border: 2px solid #444;
+            border-radius: 6px;
+            flex-shrink: 0;
+            margin-top: 2px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .checkbox.checked {
+            background: #ec4899;
+            border-color: #ec4899;
+            position: relative;
+        }
+
+        .checkbox.checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .checkbox.yellow {
+            border-color: #f59e0b;
+        }
+
+        .checkbox.blue {
+            border-color: #3b82f6;
+        }
+
+        .checkbox.purple {
+            border-color: #a855f7;
+        }
+
+        .day-summary {
+            margin-top: 32px;
+            padding: 20px;
+            background: #2a2a2a;
+            border-radius: 12px;
+            font-size: 14px;
+            color: #888;
+        }
+
+        .create-event {
+            margin-top: 16px;
+            padding: 16px;
+            background: transparent;
+            border: 2px dashed #444;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #888;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .create-event:hover {
+            border-color: #666;
+            color: #aaa;
+        }
+
+        .create-event::before {
+            content: '+';
+            font-size: 20px;
+            font-weight: 300;
+        }
+
+        footer {
+            margin-top: 80px;
+            display: flex;
+            gap: 16px;
+        }
+
+        .btn {
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .btn-back {
+            background: transparent;
+            color: #888;
+            flex: 1;
+        }
+
+        .btn-back:hover {
+            color: #aaa;
+        }
+
+        .btn-continue {
+            background: #ff5733;
+            color: white;
+            flex: 2;
+        }
+
+        .btn-continue:hover {
+            background: #e64626;
+        }
+
+        .timeline-markers {
+            position: absolute;
+            left: 36px;
+            top: 0;
+        }
+
+        .marker {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            transform: translateX(-50%);
+        }
+
+        .marker-icon {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+        }
+
+        .marker.sunrise {
+            top: -20px;
+        }
+
+        .marker.sunrise .marker-icon {
+            background: transparent;
+        }
+
+        .marker.sunset {
+            bottom: 40px;
+        }
+
+        .marker.sunset .marker-icon {
+            background: transparent;
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 24px;
+            }
+
+            h1 {
+                font-size: 40px;
+            }
+
+            .hour-label {
+                font-size: 32px;
+            }
+
+            .event-title {
+                font-size: 18px;
+            }
+
+            footer {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Your day at<br>a glance</h1>
+            <p class="subtitle">Easily view your scheduled time blocks<br>in a clean and efficient timeline format.</p>
+        </header>
+
+        <div class="timeline">
+            <div class="timeline-line"></div>
+            <div class="timeline-markers">
+                <div class="marker sunrise">
+                    <div class="marker-icon">☀️</div>
+                </div>
+                <div class="marker sunset">
+                    <div class="marker-icon">🌙</div>
+                </div>
+            </div>
+
+            <div class="hour-marker">
+                <div class="hour-label">08</div>
+                <div class="event-card completed">
+                    <div class="event-icon workout">💪</div>
+                    <div class="event-details">
+                        <div class="event-title">Morning Workout</div>
+                        <div class="event-time">07:45—08:15</div>
+                        <div class="event-duration">(30 min)</div>
+                    </div>
+                    <div class="checkbox checked"></div>
+                </div>
+
+                <div class="time-indicator">08:18</div>
+
+                <div class="event-card">
+                    <div class="event-icon shower">🚿</div>
+                    <div class="event-details">
+                        <div class="event-title">Shower</div>
+                        <div class="event-time">08:15—08:30 (15 min)</div>
+                    </div>
+                    <div class="checkbox blue"></div>
+                </div>
+
+                <div class="event-card">
+                    <div class="event-icon breakfast">☕</div>
+                    <div class="event-details">
+                        <div class="event-title">Breakfast</div>
+                        <div class="event-time">08:30—09:00</div>
+                        <div class="event-duration">(30 min)</div>
+                    </div>
+                    <div class="checkbox yellow"></div>
+                </div>
+            </div>
+
+            <div class="hour-marker">
+                <div class="hour-label">09</div>
+                <div class="event-card">
+                    <div class="event-icon email">✉️</div>
+                    <div class="event-details">
+                        <div class="event-title">Check Email</div>
+                        <div class="event-time">09:00—09:15 (15 min)</div>
+                    </div>
+                    <div class="checkbox purple"></div>
+                </div>
+            </div>
+
+            <div class="day-summary">
+                End of day: 14 hrs, 44 min, 59 secs
+            </div>
+
+            <div class="create-event">
+                Create event
+            </div>
+        </div>
+
+        <footer>
+            <button class="btn btn-back">Back</button>
+            <button class="btn btn-continue">Continue</button>
+        </footer>
+    </div>
+
+    <script>
+        // Add click handlers for checkboxes
+        document.querySelectorAll('.checkbox').forEach(checkbox => {
+            checkbox.addEventListener('click', function() {
+                this.classList.toggle('checked');
+                const card = this.closest('.event-card');
+                card.classList.toggle('completed');
+            });
+        });
+
+        // Create event interaction
+        document.querySelector('.create-event').addEventListener('click', function() {
+            alert('Create event functionality would be implemented here');
+        });
+    </script>
+</body>
+</html>

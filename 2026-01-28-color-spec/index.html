@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Spec - Design Experiment</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #000;
+            color: #fff;
+            padding: 60px;
+        }
+
+        .type-specimens {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0;
+            margin-bottom: 80px;
+        }
+
+        .specimen {
+            padding: 60px 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+        }
+
+        .specimen.regular {
+            background: linear-gradient(135deg, #1a5f54 0%, #2d7a6e 100%);
+        }
+
+        .specimen.medium {
+            background: #000;
+        }
+
+        .specimen.semi-bold {
+            background: #00ff8f;
+            color: #000;
+        }
+
+        .specimen-letter {
+            font-size: 140px;
+            font-weight: 400;
+            line-height: 1;
+            letter-spacing: -4px;
+        }
+
+        .specimen.medium .specimen-letter {
+            font-weight: 500;
+            color: #4dffb8;
+        }
+
+        .specimen.semi-bold .specimen-letter {
+            font-weight: 600;
+        }
+
+        .specimen-alphabet {
+            font-size: 13px;
+            line-height: 1.8;
+            letter-spacing: 0.5px;
+        }
+
+        .specimen.medium .specimen-alphabet {
+            color: #5dffbd;
+        }
+
+        .specimen-label {
+            margin-top: 40px;
+        }
+
+        .specimen-family {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-bottom: 4px;
+        }
+
+        .specimen-weight {
+            font-size: 32px;
+            font-weight: 400;
+        }
+
+        .specimen.medium .specimen-weight {
+            font-weight: 500;
+        }
+
+        .specimen.semi-bold .specimen-weight {
+            font-weight: 600;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 32px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #4dffb8;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 20px;
+            height: 2px;
+            background: currentColor;
+        }
+
+        .colors-section {
+            margin-bottom: 40px;
+        }
+
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
+        }
+
+        .color-card {
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .color-swatch {
+            height: 240px;
+        }
+
+        .color-info {
+            padding: 24px;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .color-name {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 16px;
+        }
+
+        .color-values {
+            font-size: 11px;
+            line-height: 1.8;
+            opacity: 0.6;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Primary Colors */
+        .rich-black .color-swatch { background: #000df1; }
+        .dark-green .color-swatch { background: #012221; }
+        .bangladesh-green .color-swatch { background: #01674c; }
+        .mountain-meadow .color-swatch { background: #20c296; }
+        .caribbean-green .color-swatch { background: #00df81; }
+        .anti-flash-white .color-swatch { background: #f1f7f6; }
+
+        /* Secondary Colors */
+        .pine .color-swatch { background: #06302b; }
+        .basil .color-swatch { background: #08453a; }
+        .forest .color-swatch { background: #095544; }
+        .frog .color-swatch { background: #178f6d; }
+        .mint .color-swatch { background: #47a98c; }
+        .stone .color-swatch { background: #707d7d; }
+        .pistachio .color-swatch { background: #aac8c4; }
+
+        @media (max-width: 1200px) {
+            .type-specimens {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 30px;
+            }
+
+            .specimen {
+                padding: 40px 30px;
+            }
+
+            .specimen-letter {
+                font-size: 100px;
+            }
+
+            .color-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="type-specimens">
+        <div class="specimen regular">
+            <div class="specimen-letter">Aa</div>
+            <div class="specimen-alphabet">
+                ABCDEFGHIJKLMNOPQRSTUVWXYZ<br>
+                abcdefghijklmnopqrstuvwxyz<br>
+                1234567890!?()[]{}&$#%
+            </div>
+            <div class="specimen-label">
+                <div class="specimen-family">Axiforma</div>
+                <div class="specimen-weight">Regular</div>
+            </div>
+        </div>
+
+        <div class="specimen medium">
+            <div class="specimen-letter">Ff</div>
+            <div class="specimen-alphabet">
+                ABCDEFGHIJKLMNOPQRSTUVWXYZ<br>
+                abcdefghijklmnopqrstuvwxyz<br>
+                1234567890!?()[]{}&$#%
+            </div>
+            <div class="specimen-label">
+                <div class="specimen-family">Axiforma</div>
+                <div class="specimen-weight">Medium</div>
+            </div>
+        </div>
+
+        <div class="specimen semi-bold">
+            <div class="specimen-letter">Xx</div>
+            <div class="specimen-alphabet">
+                ABCDEFGHIJKLMNOPQRSTUVWXYZ<br>
+                abcdefghijklmnopqrstuvwxyz<br>
+                1234567890!?()[]{}&$#%
+            </div>
+            <div class="specimen-label">
+                <div class="specimen-family">Axiforma</div>
+                <div class="specimen-weight">Semi Bold</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="colors-section">
+        <div class="section-title">Primary Colors</div>
+        <div class="color-grid">
+            <div class="color-card rich-black">
+                <div class="color-swatch"></div>
+                <div class="color-info">
+                    <div class="color-name">Rich Black</div>
+                    <div class="color-values">
+                        HEX    000DF1<br>
+                        RGB    0 13 241<br>
+                        CMYK   83 62 67 78
+                    </div>
+                </div>
+            </div>
+
+            <div class="color-card dark-green">
+                <div class="color-swatch"></div>
+                <div class="color-info">
+                    <div class="color-name">Dark Green</div>
+                    <div class="color-values">
+                        HEX    012221<br>
+                        RGB    1 34 33<br>
+                        CMYK   85 61 66 74
+                    </div>
+                </div>
+            </div>
+
+            <div class="color-card bangladesh-green">
+                <div class="color-swatch"></div>
+                <div class="color-info">
+                    <div class="color-name">Bangladesh Green</div>
+                    <div class="color-values">
+                        HEX    01674C<br>
+                        RGB    1 103 76<br>
+                        CMYK   89 38 75 29
+                    </div>
+                </div>
+            </div>
+
+            <div class="color-card mountain-meadow">
+                <div class="color-swatch"></div>
+                <div class="color-info">
+                    <div class="color-name">Mountain Meadow</div>
+                    <div class="color-values">
+                        HEX    20C296<br>
+                        RGB    32 194 150<br>
+                        CMYK   70 0 36 0
+                    </div>
+                </div>
+            </div>
+
+            <div class="color-card caribbean-green">
+                <div class="color-swatch"></div>
+                <div class="color-info">
+                    <div class="color-name">Caribbean Green</div>
+                    <div class="color-values">
+                        HEX    00DF81<br>
+                        RGB    0 223 129<br>
+                        CMYK   64 0 72 0
+                    </div>
+                </div>
+            </div>
+
+            <div class="color-card anti-flash-white">
+                <div class="color-swatch"></div>
+                <div class="color-info">
+                    <div class="color-name">Anti-Flash White</div>
+                    <div class="color-values">
+                        HEX    F1F7F6<br>
+                        RGB    241 247 246<br>
+                        CMYK   4 0 2 0
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="colors-section">
+        <div class="section-title">Secondary Colors</div>
+        <div class="color-grid">
+            <div class="color-card pine">
+                <div class="color-swatch"></div>
+                <div class="color-info">
+                    <div class="color-name">Pine</div>
+                    <div class="color-values">
+                        HEX    06302B<br>
+                        RGB    6 48 43<br>
+                        CMYK   52 80 69 64
+                    </div>
+                </div>
+            </div>
+
+            <div class="color-card basil">
+                <div class="color-swatch"></div>
+                <div class="color-info">
+                    <div class="color-name">Basil</div>
+                    <div class="color-values">
+                        HEX    08453A<br>
+                        RGB    8 69 58<br>
+                        CMYK   84 68 77 49
+                    </div>
+                </div>
+            </div>
+
+            <div class="color-card forest">
+                <div class="color-swatch"></div>
+                <div class="color-info">
+                    <div class="color-name">Forest</div>
+                    <div class="color-values">
+                        HEX    095544<br>
+                        RGB    9 85 68<br>
+                        CMYK   82 42 65 38
+                    </div>
+                </div>
+            </div>
+
+            <div class="color-card frog">
+                <div class="color-swatch"></div>
+                <div class="color-info">
+                    <div class="color-name">Frog</div>
+                    <div class="color-values">
+                        HEX    178F6D<br>
+                        RGB    23 135 109<br>
+                        CMYK   52 25 38 9
+                    </div>
+                </div>
+            </div>
+
+            <div class="color-card mint">
+                <div class="color-swatch"></div>
+                <div class="color-info">
+                    <div class="color-name">Mint</div>
+                    <div class="color-values">
+                        HEX    47A98C<br>
+                        RGB    71 169 140<br>
+                        CMYK   76 0 37 0
+                    </div>
+                </div>
+            </div>
+
+            <div class="color-card stone">
+                <div class="color-swatch"></div>
+                <div class="color-info">
+                    <div class="color-name">Stone</div>
+                    <div class="color-values">
+                        HEX    707D7D<br>
+                        RGB    112 125 125<br>
+                        CMYK   59 42 43 9
+                    </div>
+                </div>
+            </div>
+
+            <div class="color-card pistachio">
+                <div class="color-swatch"></div>
+                <div class="color-info">
+                    <div class="color-name">Pistachio</div>
+                    <div class="color-values">
+                        HEX    AAC8C4<br>
+                        RGB    170 200 196<br>
+                        CMYK   34 9 23 0
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

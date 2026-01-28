@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spec Sheet - Design Experiment</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Work Sans', sans-serif;
+            background-color: #000;
+            color: #fff;
+            padding: 60px 80px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            line-height: 1.6;
+        }
+
+        body.light-mode {
+            background-color: #fff;
+            color: #000;
+        }
+
+        .toggle-button {
+            position: fixed;
+            top: 30px;
+            right: 80px;
+            background: transparent;
+            border: 2px solid currentColor;
+            color: inherit;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-family: 'Work Sans', sans-serif;
+            font-weight: 700;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-button:hover {
+            background: currentColor;
+            color: var(--inverse-color);
+        }
+
+        body {
+            --inverse-color: #fff;
+        }
+
+        body.light-mode {
+            --inverse-color: #000;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 80px;
+        }
+
+        .logo {
+            font-size: 48px;
+            font-weight: 900;
+            letter-spacing: -2px;
+        }
+
+        .quote {
+            max-width: 400px;
+            font-size: 14px;
+            font-weight: 400;
+            line-height: 1.8;
+            font-style: italic;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 80px;
+            margin-bottom: 60px;
+        }
+
+        .service-section h2 {
+            font-size: 42px;
+            font-weight: 900;
+            margin-bottom: 30px;
+        }
+
+        .service-columns {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 40px;
+        }
+
+        .service-list {
+            list-style: none;
+        }
+
+        .service-list li {
+            font-size: 14px;
+            font-weight: 400;
+            margin-bottom: 8px;
+            opacity: 0.8;
+        }
+
+        .divider {
+            height: 2px;
+            background-color: currentColor;
+            margin: 60px 0;
+        }
+
+        .hero {
+            margin: 80px 0;
+        }
+
+        .hero h1 {
+            font-size: 120px;
+            font-weight: 900;
+            line-height: 1;
+            letter-spacing: -4px;
+        }
+
+        .hero h1 .ampersand {
+            font-weight: 400;
+        }
+
+        .hero h1 .registered {
+            font-size: 40px;
+            vertical-align: super;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 80px;
+            margin-top: 60px;
+        }
+
+        .content-section h2 {
+            font-size: 42px;
+            font-weight: 900;
+            margin-bottom: 30px;
+        }
+
+        .content-section p {
+            font-size: 14px;
+            line-height: 1.8;
+            margin-bottom: 20px;
+            opacity: 0.9;
+        }
+
+        .awards-list {
+            list-style: none;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px 40px;
+        }
+
+        .awards-list li {
+            font-size: 13px;
+            font-weight: 400;
+            opacity: 0.8;
+        }
+
+        @media (max-width: 1024px) {
+            body {
+                padding: 40px;
+            }
+
+            .toggle-button {
+                right: 40px;
+            }
+
+            .services-grid,
+            .content-grid {
+                grid-template-columns: 1fr;
+                gap: 60px;
+            }
+
+            .hero h1 {
+                font-size: 80px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 60px;
+            }
+
+            .service-columns,
+            .awards-list {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="toggle-button" onclick="toggleMode()">Toggle Mode</button>
+
+    <header>
+        <div class="logo">Ba∴</div>
+        <div class="quote">
+            "We shall not cease from exploration and at the end of our exploring will be to arrive where we started and know the place for the first time."
+        </div>
+    </header>
+
+    <div class="services-grid">
+        <div class="service-section">
+            <h2>Websites</h2>
+            <div class="service-columns">
+                <ul class="service-list">
+                    <li>Engagement</li>
+                    <li>Immersive</li>
+                    <li>Optimized</li>
+                    <li>Functional</li>
+                </ul>
+                <ul class="service-list">
+                    <li>Web Design</li>
+                    <li>Development</li>
+                    <li>The Live Data</li>
+                    <li>The Mobile Era</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="service-section">
+            <h2>Identity</h2>
+            <div class="service-columns">
+                <ul class="service-list">
+                    <li>Designation</li>
+                    <li>Symbolism</li>
+                    <li>Your Age</li>
+                    <li>Sonic Revelation</li>
+                </ul>
+                <ul class="service-list">
+                    <li>Yellow City - Alive</li>
+                    <li>Planet Mobility</li>
+                    <li>Vortex</li>
+                    <li>F.M. Urban_Uptown City</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="hero">
+        <h1>
+            Elements<br>
+            <span class="ampersand">&</span> Principles<span class="registered">®</span>
+        </h1>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="content-grid">
+        <div class="content-section">
+            <h2>About</h2>
+            <p>We are a creative team that combines technology design, world-class content strategies in a foundation. Like in Brighton, UK and Austin in Nashville we think differently about the world and how things are done.</p>
+            <p>With an approach that combines both brand and digital strategy with advanced knowledge and capability in design strategy, we work with our most significant international brands and leaders. Every project is unique, requiring our very own distinct marketing processes used to move clients towards their distinctive goals, understood by you and delivered on by us.</p>
+            <p>After graduating from RCA in 2001 with a master in Graphic Design which advanced my approach to design, the Team decided enough to work with the level of work that pushed boundaries and changed the status quo. In 2001 that foundation which created an idea brought together senior design which advanced Design thinking. The vision was a design team which made user-centric design making easy without the burden of bureaucracy and brought from the Berg Paperwork taught by you, which things will be done.</p>
+        </div>
+
+        <div class="content-section">
+            <h2>Awards</h2>
+            <ul class="awards-list">
+                <li>FWA Mobile Daily AIGA</li>
+                <li>FWA Mobile of the Month</li>
+                <li>AIGA CASE Award</li>
+                <li>FWA Site of the Month</li>
+                <li>AIGA CASE Award</li>
+                <li>American Graphic Design Award</li>
+                <li>American Graphic Design Award</li>
+                <li>AIF Nashville Gold AIGA</li>
+                <li>AIF Nashville Gold AIGA</li>
+                <li>American Graphic Design Award</li>
+                <li>AIF Nashville Gold Award</li>
+                <li>American Graphic Design Award</li>
+                <li>AIF Nashville Gold AIGA</li>
+                <li>American Graphic Design Award</li>
+                <li>AIF Nashville (Site of Silver)</li>
+                <li>American Graphic Design Award</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function toggleMode() {
+            document.body.classList.toggle('light-mode');
+        }
+    </script>
+</body>
+</html>

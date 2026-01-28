@@ -48,6 +48,8 @@
     }
 
     .experiment {
+      display: flex;
+      gap: 32px;
       margin-bottom: 50px;
       padding-bottom: 50px;
       border-bottom: 1px solid #e0e0e0;
@@ -57,17 +59,40 @@
       border-bottom: none;
     }
 
+    .experiment-preview-container {
+      flex: 0 0 280px;
+    }
+
+    .experiment-preview {
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid #e0e0e0;
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+      display: block;
+    }
+
+    .experiment-preview:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    }
+
+    .experiment-content {
+      flex: 1;
+      min-width: 0;
+    }
+
     .experiment-date {
       font-size: 13px;
       font-weight: 600;
       color: #999;
       letter-spacing: 0.05em;
       text-transform: uppercase;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
 
     .experiment-title {
-      font-size: 36px;
+      font-size: 28px;
       font-weight: 700;
       margin-bottom: 12px;
       line-height: 1.2;
@@ -85,7 +110,7 @@
     }
 
     .experiment-description {
-      font-size: 16px;
+      font-size: 15px;
       color: #555;
       margin-bottom: 16px;
       line-height: 1.6;
@@ -104,6 +129,20 @@
       background: #f0f0f0;
       border-radius: 4px;
       color: #666;
+    }
+
+    @media (max-width: 768px) {
+      .experiment {
+        flex-direction: column;
+      }
+
+      .experiment-preview-container {
+        flex: 0 0 auto;
+      }
+
+      .experiment-title {
+        font-size: 24px;
+      }
     }
 
     .footer {
@@ -137,18 +176,121 @@
 
     <!-- Experiment 1 -->
     <div class="experiment">
-      <div class="experiment-date">January 28, 2026</div>
-      <h2 class="experiment-title">
-        <a href="./2026-01-28-design-festival/">Design Festival</a>
-      </h2>
-      <p class="experiment-description">
-        Card-based layout system combining festival poster boldness with digital interface precision. Features LCD-style widgets, horizontal week calendar, metrics dashboard, and Swiss design typography.
-      </p>
-      <div class="experiment-tags">
-        <span class="tag">CSS Grid</span>
-        <span class="tag">Widgets</span>
-        <span class="tag">Festival Aesthetic</span>
-        <span class="tag">Swiss Design</span>
+      <div class="experiment-preview-container">
+        <a href="./2026-01-28-design-festival/">
+          <img src="./screenshots/design-festival.png" alt="Design Festival preview" class="experiment-preview">
+        </a>
+      </div>
+      <div class="experiment-content">
+        <div class="experiment-date">January 28, 2026</div>
+        <h2 class="experiment-title">
+          <a href="./2026-01-28-design-festival/">Design Festival</a>
+        </h2>
+        <p class="experiment-description">
+          Card-based layout system combining festival poster boldness with digital interface precision. Features LCD-style widgets, horizontal week calendar, metrics dashboard, and Swiss design typography.
+        </p>
+        <div class="experiment-tags">
+          <span class="tag">CSS Grid</span>
+          <span class="tag">Widgets</span>
+          <span class="tag">Festival Aesthetic</span>
+          <span class="tag">Swiss Design</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Experiment 2 -->
+    <div class="experiment">
+      <div class="experiment-preview-container">
+        <a href="./2026-01-28-spec-sheet/">
+          <img src="./screenshots/spec-sheet.png" alt="Spec Sheet preview" class="experiment-preview">
+        </a>
+      </div>
+      <div class="experiment-content">
+        <div class="experiment-date">January 28, 2026</div>
+        <h2 class="experiment-title">
+          <a href="./2026-01-28-spec-sheet/">Spec Sheet</a>
+        </h2>
+        <p class="experiment-description">
+          Bold typographic layout with dark/light mode toggle. Features strong hierarchy through scale contrast, clean sectioning, and a professional two-color aesthetic.
+        </p>
+        <div class="experiment-tags">
+          <span class="tag">Typography</span>
+          <span class="tag">Dark Mode</span>
+          <span class="tag">Minimal</span>
+          <span class="tag">Two Column</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Experiment 3 -->
+    <div class="experiment">
+      <div class="experiment-preview-container">
+        <a href="./2026-01-28-day-at-a-glance/">
+          <img src="./screenshots/day-at-a-glance.png" alt="Day at a Glance preview" class="experiment-preview">
+        </a>
+      </div>
+      <div class="experiment-content">
+        <div class="experiment-date">January 28, 2026</div>
+        <h2 class="experiment-title">
+          <a href="./2026-01-28-day-at-a-glance/">Day at a Glance</a>
+        </h2>
+        <p class="experiment-description">
+          Timeline-based daily schedule interface with colorful event blocks, interactive checkboxes, and time markers. Modern approach to calendar visualization with dark theme.
+        </p>
+        <div class="experiment-tags">
+          <span class="tag">Timeline</span>
+          <span class="tag">UI Component</span>
+          <span class="tag">Calendar</span>
+          <span class="tag">Dark Theme</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Experiment 4 -->
+    <div class="experiment">
+      <div class="experiment-preview-container">
+        <a href="./2026-01-28-color-spec/">
+          <img src="./screenshots/color-spec.png" alt="Color Spec preview" class="experiment-preview">
+        </a>
+      </div>
+      <div class="experiment-content">
+        <div class="experiment-date">January 28, 2026</div>
+        <h2 class="experiment-title">
+          <a href="./2026-01-28-color-spec/">Color Spec</a>
+        </h2>
+        <p class="experiment-description">
+          Comprehensive brand system specification showcasing green-focused color palette with detailed technical values. Features large type specimens and organized color swatches.
+        </p>
+        <div class="experiment-tags">
+          <span class="tag">Brand System</span>
+          <span class="tag">Color Palette</span>
+          <span class="tag">Typography</span>
+          <span class="tag">Design System</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Experiment 5 -->
+    <div class="experiment">
+      <div class="experiment-preview-container">
+        <a href="./2026-01-28-blend/">
+          <img src="./screenshots/blend.png" alt="Blend preview" class="experiment-preview">
+        </a>
+      </div>
+      <div class="experiment-content">
+        <div class="experiment-date">January 28, 2026</div>
+        <h2 class="experiment-title">
+          <a href="./2026-01-28-blend/">Blend</a>
+        </h2>
+        <p class="experiment-description">
+          Gradient exploration with 12 distinct color blends in two style sets. Features smooth linear gradients and bold radial techniques with vibrant purple, pink, and orange combinations.
+        </p>
+        <div class="experiment-tags">
+          <span class="tag">Gradients</span>
+          <span class="tag">Color Theory</span>
+          <span class="tag">Visual Design</span>
+          <span class="tag">Grid Layout</span>
+        </div>
       </div>
     </div>
 

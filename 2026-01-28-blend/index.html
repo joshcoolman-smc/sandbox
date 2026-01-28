@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blend - Gradient Experiments</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: #000;
+            color: #fff;
+        }
+
+        .hero {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg,
+                #3b1e54 0%,
+                #6b2d5c 15%,
+                #c2374a 30%,
+                #ff6b4a 45%,
+                #ffd45e 60%,
+                #1a1a3e 75%,
+                #2d1b4e 85%,
+                #4a1b5a 100%
+            );
+            position: relative;
+        }
+
+        h1 {
+            font-size: 140px;
+            font-weight: 700;
+            letter-spacing: -4px;
+            text-align: center;
+            z-index: 1;
+        }
+
+        .section-title {
+            background: #000;
+            padding: 40px 60px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-align: right;
+            color: #666;
+        }
+
+        .gradient-grid {
+            background: #000;
+            padding: 60px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-auto-rows: 200px;
+            gap: 20px;
+        }
+
+        .gradient-card {
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Bento box layout variations */
+        .span-2x2 {
+            grid-column: span 2;
+            grid-row: span 2;
+        }
+
+        .span-2x1 {
+            grid-column: span 2;
+            grid-row: span 1;
+        }
+
+        .span-1x2 {
+            grid-column: span 1;
+            grid-row: span 2;
+        }
+
+        .span-1x1 {
+            grid-column: span 1;
+            grid-row: span 1;
+        }
+
+        /* Style Set 01 - Smooth blends */
+        .gradient-1 {
+            background: linear-gradient(135deg, #2d1b69 0%, #6b4199 40%, #ff9a56 70%, #ffd89b 100%);
+        }
+
+        .gradient-2 {
+            background: linear-gradient(180deg, #1a1a3e 0%, #4a2d6b 30%, #ff6b88 60%, #ffd45e 100%);
+        }
+
+        .gradient-3 {
+            background: linear-gradient(45deg, #2d1b69 0%, #6b2d99 25%, #d946a6 60%, #4d7cff 100%);
+        }
+
+        .gradient-4 {
+            background: linear-gradient(225deg, #6b1b54 0%, #c2374a 35%, #ff6b4a 65%, #ffe4b8 100%);
+        }
+
+        .gradient-5 {
+            background: linear-gradient(90deg, #1a1a3e 0%, #3d2d6b 50%, #000 100%);
+        }
+
+        .gradient-6 {
+            background: linear-gradient(315deg, #2d1b69 0%, #6b4199 30%, #ff9a56 60%, #ffd89b 100%);
+        }
+
+        /* Style Set 02 - Bold contrasts */
+        .gradient-7 {
+            background: radial-gradient(circle at 30% 50%, #6b2d99 0%, #1a1a3e 30%, #ff1744 60%, #000 100%);
+        }
+
+        .gradient-8 {
+            background: radial-gradient(circle at 70% 40%, #ff006e 0%, #fff 40%, #8338ec 70%, #000 100%);
+        }
+
+        .gradient-9 {
+            background: radial-gradient(ellipse at 60% 30%, #ff6b4a 0%, #000 40%, #6b2d99 70%, #000 100%);
+        }
+
+        .gradient-10 {
+            background: radial-gradient(circle at 40% 60%, #c2374a 0%, #000 35%, #ff9a56 65%, #1a1a3e 100%);
+        }
+
+        .gradient-11 {
+            background: radial-gradient(ellipse at 50% 50%, #fff 0%, #ff1744 30%, #6b2d99 60%, #000 100%);
+        }
+
+        .gradient-12 {
+            background: radial-gradient(circle at 30% 70%, #ff6b88 0%, #1a1a3e 40%, #ffd45e 70%, #2d1b69 100%);
+        }
+
+        .gradient-label {
+            position: absolute;
+            bottom: 16px;
+            left: 16px;
+            font-size: 10px;
+            font-weight: 700;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 6px 12px;
+            border-radius: 6px;
+            backdrop-filter: blur(10px);
+            letter-spacing: 1px;
+        }
+
+        .spacer {
+            height: 80px;
+            background: #000;
+        }
+
+        @media (max-width: 1024px) {
+            h1 {
+                font-size: 100px;
+            }
+
+            .gradient-grid {
+                grid-template-columns: repeat(2, 1fr);
+                padding: 40px;
+            }
+
+            .span-2x2, .span-2x1 {
+                grid-column: span 2;
+            }
+        }
+
+        @media (max-width: 640px) {
+            h1 {
+                font-size: 60px;
+            }
+
+            .gradient-grid {
+                grid-template-columns: 1fr;
+                padding: 30px;
+                grid-auto-rows: 250px;
+            }
+
+            .section-title {
+                padding: 30px;
+            }
+
+            .span-2x2, .span-2x1, .span-1x2, .span-1x1 {
+                grid-column: span 1;
+                grid-row: span 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <section class="hero">
+        <h1>Blend</h1>
+    </section>
+
+    <div class="section-title">COLOR STYLES 01</div>
+
+    <div class="gradient-grid">
+        <div class="gradient-card gradient-1 span-1x1">
+            <div class="gradient-label">PURPLE SUNRISE</div>
+        </div>
+        <div class="gradient-card gradient-2 span-2x1">
+            <div class="gradient-label">TWILIGHT</div>
+        </div>
+        <div class="gradient-card gradient-3 span-1x2">
+            <div class="gradient-label">COSMIC BURST</div>
+        </div>
+        <div class="gradient-card gradient-4 span-2x2">
+            <div class="gradient-label">WARM HORIZON</div>
+        </div>
+        <div class="gradient-card gradient-5 span-1x1">
+            <div class="gradient-label">MIDNIGHT FADE</div>
+        </div>
+        <div class="gradient-card gradient-6 span-1x1">
+            <div class="gradient-label">GOLDEN HOUR</div>
+        </div>
+    </div>
+
+    <div class="spacer"></div>
+
+    <div class="section-title">COLOR STYLES 02</div>
+
+    <div class="gradient-grid">
+        <div class="gradient-card gradient-7 span-2x2">
+            <div class="gradient-label">NEBULA</div>
+        </div>
+        <div class="gradient-card gradient-8 span-1x1">
+            <div class="gradient-label">SUPERNOVA</div>
+        </div>
+        <div class="gradient-card gradient-9 span-1x2">
+            <div class="gradient-label">ECLIPSE</div>
+        </div>
+        <div class="gradient-card gradient-10 span-1x1">
+            <div class="gradient-label">EMBER GLOW</div>
+        </div>
+        <div class="gradient-card gradient-11 span-2x1">
+            <div class="gradient-label">FLASH POINT</div>
+        </div>
+        <div class="gradient-card gradient-12 span-1x1">
+            <div class="gradient-label">AURORA</div>
+        </div>
+    </div>
+
+    <div class="spacer"></div>
+</body>
+</html>
