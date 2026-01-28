@@ -4,7 +4,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Simple Vite-based static site for visualizing CSS Grid section/block layout patterns. Single HTML file with embedded styles.
+Design experiments sandbox for rapid visual exploration. Each experiment is a self-contained design exercise stored in dated folders.
+
+## Repository Structure
+
+```
+/
+├── index.html                         # Homepage/changelog
+├── YYYY-MM-DD-experiment-name/        # Dated experiment folders
+│   ├── index.html                     # The experiment
+│   ├── README.md                      # Documentation
+│   └── screenshots/                   # Design iterations
+└── CLAUDE.md                          # This file
+```
 
 ## Development Commands
 
@@ -14,9 +26,61 @@ npm run build    # Build for production
 npm run preview  # Preview production build
 ```
 
-## Architecture
+## Workflow for New Experiments
 
-- **Single-file architecture**: All code in `index.html` (markup, styles, no JavaScript)
-- **Vite configuration**: Custom port (3000), auto-open browser on dev
-- **No build artifacts**: No src/ directory, no components, no TypeScript
-- **Pure CSS Grid**: Examples demonstrate grid-column/grid-row spanning patterns
+When the user says "new experiment" or shares an image to explore:
+
+1. **Create dated folder**: `YYYY-MM-DD-descriptive-name/`
+2. **Build experiment**: Create `index.html` inside folder
+3. **Document it**: Create `README.md` with:
+   - Overview and key features
+   - Design principles
+   - How to run
+   - Dependencies (fonts, libraries)
+   - Screenshots reference
+4. **Update homepage**: Add entry to root `index.html` with:
+   - Date
+   - Title (linked to experiment)
+   - One-line description
+   - Tags
+5. **Save screenshots**: Store in `screenshots/` subfolder
+6. **Ship it**: Commit with descriptive message
+
+## Experiment README Template
+
+```markdown
+# Experiment Name
+
+**Date:** Month Day, Year
+**Type:** Brief categorization
+
+## Overview
+What it is and what it explores
+
+## Key Features
+- Bullet list of notable elements
+
+## Design Principles
+- Core aesthetic concepts
+
+## How to Run
+Steps to view the experiment
+
+## Dependencies
+- List external dependencies
+
+## Screenshots
+Reference to screenshots folder
+```
+
+## Design Philosophy
+
+- **Self-contained**: Each experiment folder can be copied out independently
+- **No build required**: Pure HTML/CSS when possible
+- **Rapid exploration**: Focus on visual aesthetics over functionality
+- **Documented**: Each experiment explains its design thinking
+- **Chronological**: Easy to see design progression over time
+
+## Current Experiments
+
+1. **Design Festival** (2026-01-28): Card-based layout with festival aesthetics and LCD widgets
