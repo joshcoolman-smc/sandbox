@@ -98,4 +98,4 @@ This sandbox is for rapid design exploration—building visual systems, testing 
 
 ---
 
-**View live experiments:** [Homepage](https://joshcoolman-smc.github.io/sandbox/)
+**View live experiments:** https://joshcoolman-smc.github.io/sandbox/
