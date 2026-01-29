@@ -52,6 +52,19 @@ When the user says "new experiment" or shares an image to explore:
    - Tags
 7. **Ship it**: Commit with descriptive message
 
+## Workflow for Modifying Experiments
+
+When updating an existing experiment:
+
+1. **Make changes**: Edit the experiment's `index.html`
+2. **Verify with browser**: Use agent-browser to check the updates
+3. **Update screenshot**: Retake screenshot and save to `/screenshots/experiment-name.png`
+4. **Move to top**: Reorder both `index.html` and `README.md` to move this experiment to the **top of the list**
+   - This keeps most recently modified work visible first
+   - Maintains chronological order by last activity, not creation date
+5. **Update experiment README**: Add notes about what changed
+6. **Ship it**: Commit with descriptive message noting the modifications
+
 ## Experiment README Template
 
 ```markdown
