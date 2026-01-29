@@ -8,6 +8,19 @@ This is rough work often done spur of the moment. Nothing is typically functiona
 
 ## Experiments
 
+### NASA Layout
+**January 29, 2026**
+
+[![NASA Layout](./screenshots/nasa-layout.png)](https://joshcoolman-smc.github.io/sandbox/2026-01-29-nasa-layout/)
+
+Bold orange and black card design inspired by NASA and Off-White aesthetics. Features diagonal stripe pattern, large-scale typography, and technical information layout with industrial flair.
+
+**Tags:** Typography • Stripes • NASA • Bold Color
+
+**[View Code →](./2026-01-29-nasa-layout/)**
+
+---
+
 ### Design Festival
 **January 28, 2026**
 
