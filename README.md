@@ -8,6 +8,19 @@ This is rough work often done spur of the moment. Nothing is typically functiona
 
 ## Experiments
 
+### Design Festival
+**January 28, 2026**
+
+[![Design Festival](./screenshots/design-festival.png)](https://joshcoolman-smc.github.io/sandbox/2026-01-28-design-festival/)
+
+Card-based layout system combining festival poster boldness with digital interface precision. Features LCD-style widgets, horizontal week calendar, metrics dashboard, and Swiss design typography.
+
+**Tags:** CSS Grid • Widgets • Festival Aesthetic • Swiss Design
+
+**[View Code →](./2026-01-28-design-festival/)**
+
+---
+
 ### Spec Sheet
 **January 28, 2026**
 
@@ -57,19 +70,6 @@ Gradient exploration with 12 distinct color blends in two style sets. Features s
 **Tags:** Gradients • Color Theory • Visual Design • Grid Layout
 
 **[View Code →](./2026-01-28-blend/)**
-
----
-
-### Design Festival
-**January 28, 2026**
-
-[![Design Festival](./screenshots/design-festival.png)](https://joshcoolman-smc.github.io/sandbox/2026-01-28-design-festival/)
-
-Card-based layout system combining festival poster boldness with digital interface precision. Features LCD-style widgets, horizontal week calendar, metrics dashboard, and Swiss design typography.
-
-**Tags:** CSS Grid • Widgets • Festival Aesthetic • Swiss Design
-
-**[View Code →](./2026-01-28-design-festival/)**
 
 ---
 
