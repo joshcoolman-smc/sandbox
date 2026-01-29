@@ -123,7 +123,7 @@
             bottom: 0;
             left: 0;
             right: 0;
-            height: 55%;
+            height: 50%;
             overflow: hidden;
             border-radius: 0 0 24px 24px;
         }
@@ -131,18 +131,16 @@
         .stripe {
             position: absolute;
             background: #2a2a2a;
-            height: 90px;
+            height: 50px;
             width: 300%;
             left: -100%;
         }
 
-        .stripe:nth-child(1) { bottom: -20px; transform: rotate(-23deg); }
-        .stripe:nth-child(2) { bottom: 50px; transform: rotate(-23deg); }
-        .stripe:nth-child(3) { bottom: 120px; transform: rotate(-23deg); }
-        .stripe:nth-child(4) { bottom: 190px; transform: rotate(-23deg); }
-        .stripe:nth-child(5) { bottom: 260px; transform: rotate(-23deg); }
-        .stripe:nth-child(6) { bottom: 330px; transform: rotate(-23deg); }
-        .stripe:nth-child(7) { bottom: 400px; transform: rotate(-23deg); }
+        .stripe:nth-child(1) { bottom: 0px; transform: rotate(-23deg); }
+        .stripe:nth-child(2) { bottom: 80px; transform: rotate(-23deg); }
+        .stripe:nth-child(3) { bottom: 160px; transform: rotate(-23deg); }
+        .stripe:nth-child(4) { bottom: 240px; transform: rotate(-23deg); }
+        .stripe:nth-child(5) { bottom: 320px; transform: rotate(-23deg); }
     </style>
 </head>
 <body>
@@ -177,8 +175,6 @@
         </div>
 
         <div class="diagonal-stripes">
-            <div class="stripe"></div>
-            <div class="stripe"></div>
             <div class="stripe"></div>
             <div class="stripe"></div>
             <div class="stripe"></div>
