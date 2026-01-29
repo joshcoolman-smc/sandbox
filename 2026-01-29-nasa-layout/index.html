@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NASA Layout Experiment</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: #1a1a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 40px;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 700px;
+            aspect-ratio: 5/7;
+            background: #ff4500;
+            border-radius: 24px;
+            padding: 48px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 40px;
+        }
+
+        .title-section {
+            flex: 1;
+        }
+
+        .title {
+            font-size: 36px;
+            font-weight: 700;
+            color: #1a1a1a;
+            letter-spacing: -0.02em;
+            margin-bottom: 16px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: #1a1a1a;
+            line-height: 1.6;
+            font-weight: 500;
+        }
+
+        .logo-section {
+            text-align: right;
+        }
+
+        .nasa-logo {
+            font-size: 72px;
+            font-weight: 700;
+            color: #1a1a1a;
+            letter-spacing: 0.1em;
+            margin-bottom: 8px;
+        }
+
+        .nasa-description {
+            font-size: 11px;
+            color: #1a1a1a;
+            line-height: 1.5;
+            max-width: 280px;
+            text-align: right;
+            margin-left: auto;
+        }
+
+        .date {
+            font-size: 11px;
+            color: #1a1a1a;
+            margin-top: 8px;
+        }
+
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .number {
+            font-size: 120px;
+            font-weight: 700;
+            color: #1a1a1a;
+            letter-spacing: -0.02em;
+            margin-bottom: 32px;
+        }
+
+        .accent-stripes {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 48px;
+        }
+
+        .accent-stripe {
+            width: 80px;
+            height: 12px;
+            background: #1a1a1a;
+            transform: skewX(-20deg);
+        }
+
+        .diagonal-stripes {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 55%;
+            overflow: hidden;
+            border-radius: 0 0 24px 24px;
+        }
+
+        .stripe {
+            position: absolute;
+            background: #2a2a2a;
+            height: 90px;
+            width: 300%;
+            left: -100%;
+        }
+
+        .stripe:nth-child(1) { bottom: -20px; transform: rotate(-23deg); }
+        .stripe:nth-child(2) { bottom: 50px; transform: rotate(-23deg); }
+        .stripe:nth-child(3) { bottom: 120px; transform: rotate(-23deg); }
+        .stripe:nth-child(4) { bottom: 190px; transform: rotate(-23deg); }
+        .stripe:nth-child(5) { bottom: 260px; transform: rotate(-23deg); }
+        .stripe:nth-child(6) { bottom: 330px; transform: rotate(-23deg); }
+        .stripe:nth-child(7) { bottom: 400px; transform: rotate(-23deg); }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="header">
+            <div class="title-section">
+                <div class="title">"NEW HORIZONS"</div>
+                <div class="subtitle">
+                    Off-White for NASA<br>
+                    Washington, D.C. USA<br>
+                    "INFINIX WALLPAPER"<br>
+                    c.2023
+                </div>
+            </div>
+            <div class="logo-section">
+                <div class="nasa-logo">NASA</div>
+                <div class="nasa-description">
+                    The National Aeronautics and Space Administration is an independent agency of the United States Federal Government responsible for the civilian space program, as well as aeronautics and aerospace research.
+                </div>
+                <div class="date">c.2023</div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="number">"757"</div>
+            <div class="accent-stripes">
+                <div class="accent-stripe"></div>
+                <div class="accent-stripe"></div>
+                <div class="accent-stripe"></div>
+                <div class="accent-stripe"></div>
+            </div>
+        </div>
+
+        <div class="diagonal-stripes">
+            <div class="stripe"></div>
+            <div class="stripe"></div>
+            <div class="stripe"></div>
+            <div class="stripe"></div>
+            <div class="stripe"></div>
+            <div class="stripe"></div>
+            <div class="stripe"></div>
+        </div>
+    </div>
+</body>
+</html>
