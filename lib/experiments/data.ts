@@ -2,6 +2,16 @@ import type { Experiment } from '@/app/types/experiments'
 
 export const experiments: Experiment[] = [
   {
+    slug: 'sounding-line',
+    date: 'July 30, 2026',
+    title: 'Sounding Line',
+    subtitle: 'Sculpt a hex mesh by clicking — a rotating line sounds every peak it crosses, pitched to its elevation.',
+    description: 'A playable topography. Click to raise a peak and it stays; a line sweeps from the centre on its own clock and every peak it crosses plays a note pitched to that peak\'s elevation, so the topographic color you see is the note you hear — deep blue is a sub, white peaks are the high bells. The mesh quantizes elevation into sixteen color bands and C major pentatonic spans exactly sixteen degrees from C2 to C5, so one array picks both the color and the pitch and nothing you build can be out of key. Restack a peak to climb the scale, place two close together to grow a ridge that lifts the pitch of both, shift-click to carve a basin, hover any peak for a plaque naming its note. Nothing erodes — the range you build is the range that stays, until you reset it.',
+    screenshot: '/screenshots/sounding-line.png',
+    tags: ['Audio', 'Web Audio API', 'Canvas', 'Generative', 'Interactive'],
+    theme: 'dark',
+  },
+  {
     slug: 'adaptive-grid',
     date: 'June 14, 2026',
     title: 'Adaptive Grid',
