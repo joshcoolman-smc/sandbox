@@ -600,3 +600,22 @@ Skills are invoked with a slash command in Claude Code:
 ### Skill Location
 
 Skills are stored in `.claude/skills/` and are committed to this repo. They work in any project when this directory structure is present, or can be copied to other repos individually.
+
+---
+
+## Status
+
+**Last shipped**
+
+- Sounding Line — pad voice replacing the shrill square lead, continuous sweep with millisecond-exact crossings, camera tilt control defaulting to a near-horizon 80°, eased rotation, LOW/HIGH/BEAT layers and MUTE, console below the composition (PR #20)
+- Removed LinkedIn and Bluesky links (PR #19)
+- AI News feature and LocalOnlyCard removed
+- `/transcript` reworked into a self-contained HTML skill with chapter support
+
+**In flight**
+
+- Branch `sounding-line-layers` — unmerged by choice, parked at a good stopping point. Moves pitch out of the terrain into `lib/harmony.ts` (a chord progression on its own clock; a crossing voices the current chord instead of computing a frequency), ports tempo and density from step-sequencer at 100bpm, and makes a click *generate* a new range rather than accumulate onto the old one. Read the commit message before resuming — it records why each piece changed, including two things this branch reverses from `main`.
+
+**Up next**
+
+- Open issues, in order: #21 (XY orbit pad replacing the rotate/tilt sliders), #22 (gear on BEAT opening a mini drum sequencer whose playhead is the sounding line itself)
