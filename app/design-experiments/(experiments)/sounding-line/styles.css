@@ -160,26 +160,35 @@
   }
 }
 
-/* Controls. The only chrome on the page, kept to two small items in the corner:
-   a reset, and one word that admits the browser will not make sound until you
-   touch something. */
 .sl-controls {
   position: absolute;
-  top: 146px;
-  right: 26px;
+  bottom: 108px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 12;
   display: flex;
   align-items: center;
   gap: 12px;
   font-family: var(--font-space-mono), ui-monospace, monospace;
 }
+/* Controls sit under the composition, not over it. At the top right they competed
+   with the terrain for the same corner and read as part of the header; below the
+   mesh they read as the console for the thing above them, and the landscape gets
+   the whole frame. Centred, because the composition is centred. */
 
 .sl-muted {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 9px;
   font-size: 9px;
   letter-spacing: 0.22em;
   color: rgba(232, 62, 44, 0.85);
   white-space: nowrap;
 }
+/* Lifted out of the flex row on purpose: inline, it padded the row and the whole
+   console shifted sideways the moment audio started. */
 
 .sl-reset {
   appearance: none;
@@ -247,4 +256,40 @@
   background: #e83e2c;
   border: none;
   cursor: ew-resize;
+}
+
+.sl-layers {
+  display: flex;
+  gap: 5px;
+}
+
+.sl-layer {
+  appearance: none;
+  background: rgba(8, 12, 18, 0.72);
+  border: 1px solid rgba(245, 245, 240, 0.16);
+  color: rgba(245, 245, 240, 0.4);
+  font: inherit;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  padding: 6px 9px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
+}
+/* A layer that is off has to look off at a glance — the toggles are the one place
+   in this UI where current state matters more than the label. */
+
+.sl-layer.is-on {
+  border-color: rgba(232, 62, 44, 0.6);
+  color: #f5f5f0;
+  background: rgba(232, 62, 44, 0.14);
+}
+
+.sl-layer:hover {
+  border-color: rgba(245, 245, 240, 0.5);
+  color: #f5f5f0;
+}
+
+.sl-reset.is-off {
+  border-color: rgba(232, 62, 44, 0.6);
+  color: rgba(232, 62, 44, 0.9);
 }

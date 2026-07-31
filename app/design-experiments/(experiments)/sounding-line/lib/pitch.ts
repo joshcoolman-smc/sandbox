@@ -14,23 +14,29 @@
 
 export const ELEV_BANDS = 16;
 
-// The sweep is quantized into this many steps per revolution, and a peak sounds on
-// the step its sector belongs to rather than at its exact angle.
+// The sweep turns continuously and a peak sounds at its exact crossing angle.
 //
-// This is what stops the mud. Peaks land wherever the visitor clicks, so firing
-// them at their true angle scatters notes across arbitrary moments — every note
-// individually in key, the whole thing rhythmically shapeless. Snapping to a grid
-// is the reason step-sequencer's generate button always sounds good, and it means
-// it barely matters where you click here either.
+// An earlier pass quantized both — the line stepped between 16 sectors and peaks
+// fired on the sector grid — because the voice then was a percussive stab, and
+// stabs landing at arbitrary moments are rhythmically shapeless. The pad voice
+// removed the reason: notes with a 45ms attack and a 2s tail overlap into a bed
+// where entrances are the texture, not the beat. What quantizing cost was the
+// premise — the line is supposed to sound what it touches *when* it touches it.
+//
+// The 16-step grid survives as the rotation unit only, since one notch has to
+// turn the composition by a fixed amount.
 export const STEPS = 16;
-export const REV_MS = 3840; // 240ms per step — an eighth-note feel around 125bpm
+export const REV_MS = 3840; // one revolution — ~4s per pass over the range
 export const STEP_MS = REV_MS / STEPS;
 export const STEP_ANGLE = (Math.PI * 2) / STEPS;
 
-// Voice budget per step. Pentatonic keeps any combination consonant, but density
-// still turns to porridge — and two sub-bass notes at once is mud by itself.
-export const MAX_NOTES_PER_STEP = 4; // room for a planted chord plus a neighbour
-export const MAX_BASS_PER_STEP = 1;
+// Voice budget, now measured over a rolling window rather than per step, since
+// there are no steps to count against. Pentatonic keeps any combination
+// consonant, but density still turns to porridge — and two sub-bass notes at
+// once is mud by itself.
+export const VOICE_WINDOW_MS = STEP_MS;
+export const MAX_NOTES_PER_WINDOW = 4; // room for a planted chord plus a neighbour
+export const MAX_BASS_PER_WINDOW = 1;
 export const BASS_TOP_DEGREE = 2;
 
 // Rotation: one notch turns the composition one step and transposes it one scale

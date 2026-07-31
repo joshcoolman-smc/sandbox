@@ -89,14 +89,25 @@ export function composeScatter(cx: number, cy: number, discRadius: number): Seed
   return seeds;
 }
 
-export function seedToPeak(seed: Seed, id: number, cx: number, cy: number, now: number): Peak {
-  return makePeak(id, seed.x, seed.y, seed.amp, cx, cy, now, 0, true);
+export function seedToPeak(
+  seed: Seed,
+  id: number,
+  cx: number,
+  cy: number,
+  now: number,
+  rotation = 0,
+): Peak {
+  // Rotation is passed through for the same reason a click passes it: the seeded
+  // layout is composed in screen space, so it has to be stored relative to where
+  // the composition currently sits or a reset while turned lands askew.
+  return makePeak(id, seed.x, seed.y, seed.amp, cx, cy, now, rotation, true);
 }
 
 // A click plants a chord, not a note.
 //
 // One click, one peak meant a dozen clicks before anything was worth hearing. A
-// spoke of peaks at one angle all share a sector, so the sweep strikes them
+// spoke of peaks shares one bearing, so the sweep crosses them all at the same
+// instant and strikes them
 // together — the click becomes a stacked multi-tone the way holding a column in a
 // step sequencer does, and the terrain gains a ridge running outward rather than a
 // lone pimple.

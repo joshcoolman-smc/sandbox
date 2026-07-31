@@ -11,7 +11,7 @@
 // the note that sounds on the next pass.
 
 import { CELL_SIZE } from '../meshLayout';
-import { bandOf, ELEV_BANDS, STEP_ANGLE, STEPS } from './pitch';
+import { bandOf, ELEV_BANDS } from './pitch';
 
 // Camera directly above.
 export const CAM_Z = 2200;
@@ -91,7 +91,7 @@ export function ampForBand(band: number): number {
 export const CYCLE_TOP = ampForBand(ELEV_BANDS - 1);
 export const CYCLE_BOTTOM = ampForBand(0);
 
-// Every peak is built here, so angle/sector/radius can never be derived two
+// Every peak is built here, so angle/radius can never be derived two
 // different ways. `risen` is for seeded terrain, which should already be standing
 // when the page paints rather than assembling itself while the visitor watches.
 export function makePeak(
@@ -119,7 +119,7 @@ export function makePeak(
     // its position under the pointer and still rotates coherently with the rest.
     baseAngle: angle - rotation,
     angle,
-    sector: Math.floor(angle / STEP_ANGLE) % STEPS,
+    lastRev: -Infinity,
     radius: Math.hypot(x - cx, y - cy),
     dir: 1,
     struckAt: -1,
@@ -136,7 +136,6 @@ export function applyRotation(peaks: Peak[], cx: number, cy: number, rotation: n
     let a = (p.baseAngle + rotation) % twoPi;
     if (a < 0) a += twoPi;
     p.angle = a;
-    p.sector = Math.floor(a / STEP_ANGLE) % STEPS;
     p.x = cx + Math.cos(a) * p.radius;
     p.y = cy + Math.sin(a) * p.radius;
   }
@@ -152,7 +151,8 @@ export type Peak = {
   band: number; // recomputed per frame from the terrain at (x, y)
   baseAngle: number; // unrotated bearing — the peak's identity on the map
   angle: number; // baseAngle + current rotation
-  sector: number; // which of the sweep's 16 steps this peak sounds on
+  lastRev: number; // revolution index this peak last sounded on, so the
+  // continuous sweep fires it exactly once per pass
   radius: number; // from mesh centre — sets note length
   dir: 1 | -1; // which way the next restack moves it along the cycle
   struckAt: number; // last time the sweep hit it, for the flare
@@ -243,10 +243,10 @@ export const BREATH_EASE_PER_S = 0.6;
 
 // Camera distance needed to hold the deepest point at MAX_PROJ_SCALE. Never closer
 // than CAM_Z, so an empty mesh sits at 1:1 and the retreat only ever widens.
-export function cameraFor(maxHeight: number): number {
+export function cameraFor(maxHeight: number, view: View = DEFAULT_VIEW): number {
   // Under tilt, height only closes part of the distance to the camera, so the
   // retreat needed is scaled by the same cosine the projection uses.
-  const closest = maxHeight * HEIGHT_GAIN * Math.cos(TILT) * PROJ_DAMP;
+  const closest = maxHeight * HEIGHT_GAIN * view.cos * PROJ_DAMP;
   return Math.max(CAM_Z, closest + CAM_Z / MAX_PROJ_SCALE);
 }
 
@@ -260,10 +260,27 @@ export function cameraFor(maxHeight: number): number {
 // is the same thing as orbiting the camera around the world.
 //
 // 0 would be straight down, PI/2 would be at the horizon.
-export const TILT = 0.8; // ~46° off vertical
+//
+// Live rather than fixed: the right angle was a thing to find by eye, so it is a
+// control. The default is where it landed — low, near the horizon, which is what
+// lets a tall range recede into the distance instead of climbing out of frame.
+export const TILT = (80 * Math.PI) / 180;
+// The usable window, found by sweeping it. Below 35° the view flattens toward plan
+// and height stops reading as height; past 80° the ground plane collapses toward a
+// line and there is no surface left to sculpt.
+export const TILT_MIN = (35 * Math.PI) / 180;
+export const TILT_MAX = (80 * Math.PI) / 180;
 
-const TILT_COS = Math.cos(TILT);
-const TILT_SIN = Math.sin(TILT);
+// Precomputed sin/cos for one tilt angle. Passed in rather than recomputed per
+// point: projectPoint runs once per mesh node per frame, and the trig is the only
+// part of it that doesn't depend on the point.
+export type View = { cos: number; sin: number };
+
+export function viewFor(tilt: number): View {
+  return { cos: Math.cos(tilt), sin: Math.sin(tilt) };
+}
+
+const DEFAULT_VIEW = viewFor(TILT);
 
 // How much of a peak's world height becomes screen height.
 //
@@ -285,17 +302,18 @@ export function projectPoint(
   ey: number,
   height: number,
   camZ: number,
+  view: View = DEFAULT_VIEW,
 ): { sx: number; sy: number; scale: number } {
   const h = height * HEIGHT_GAIN;
   // Ground recedes with ey; height brings a point closer to an overhead camera.
-  const depth = ey * TILT_SIN - h * TILT_COS * PROJ_DAMP;
+  const depth = ey * view.sin - h * view.cos * PROJ_DAMP;
   const denom = camZ + depth;
   const scale = CAM_Z / (denom < 240 ? 240 : denom);
   return {
     sx: ex * scale,
     // Height lifts up the screen, and the ground plane compresses into a band —
     // which is what leaves vertical room for the mountains to stand up in.
-    sy: (ey * TILT_COS - h * TILT_SIN) * scale + VIEW_DROP,
+    sy: (ey * view.cos - h * view.sin) * scale + VIEW_DROP,
     scale,
   };
 }

@@ -36,11 +36,11 @@ Experiments degrade gracefully without their keys set — Monono, for example, s
 
 ### Sounding Line
 
-**July 30, 2026**
+**July 31, 2026**
 
 [![Sounding Line](./public/screenshots/sounding-line.png)](/design-experiments/sounding-line)
 
-A playable topography. Click to raise a peak and it stays; a line sweeps from the centre on its own clock and every peak it crosses plays a note pitched to that peak's elevation, so the topographic color you see is the note you hear — deep blue is a sub, white peaks are the high bells. The mesh quantizes elevation into sixteen color bands and C major pentatonic spans exactly sixteen degrees from C2 to C5, so one array picks both the color and the pitch and nothing you build can be out of key. Shift-click to carve a basin; nothing erodes, so the range you build is the range that stays.
+A playable topography. Click to raise a peak and it stays; a line sweeps continuously from the centre and every peak it crosses plays a note pitched to that peak's elevation, so the topographic color you see is the note you hear. Elevation quantizes into sixteen color bands and C major pentatonic spans exactly sixteen degrees, so one array picks both the color and the pitch and nothing you build can be out of key. The voice is a pad, so peaks bloom and overlap into a bed; a console under the composition toggles registers and a drum layer, orbits the range, and swings the camera from overhead to a near-horizon landscape.
 
 `Audio` `Web Audio API` `Canvas` `Generative` `Interactive`
 

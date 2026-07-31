@@ -1,6 +1,6 @@
 // experiment: Sounding Line — a hex mesh you sculpt by clicking. The page loads
-// with a composed range already standing, and a line steps round from the centre in
-// sixteen sectors; every peak it lands on sounds a note pitched to that peak's
+// with a composed range already standing, and a line sweeps round from the centre;
+// every peak it crosses sounds a note pitched to that peak's
 // elevation, so the topographic colour is the note. A click plants a chord along
 // its spoke; clicking the same place again cycles it up the scale and back down.
 // Hover a peak for its plaque.
@@ -13,7 +13,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { DecodeText } from '@/app/components/DecodeText';
 import { makePlaque, type Plaque } from './data/plaque';
-import { createEngine } from './lib/audio';
+import { createEngine, type Engine } from './lib/audio';
 import { composeChord, composeScatter, seedToPeak } from './lib/generate';
 import { BAND_HEX, EDGE_COLORS, NODE_COLORS, NODE_RADII } from './lib/terrain';
 import {
@@ -39,6 +39,10 @@ import {
   MERGE_DIST,
   PEAK_MIN_AMP,
   projectPoint,
+  TILT,
+  TILT_MAX,
+  TILT_MIN,
+  viewFor,
   RISE_MS,
   SCALE_EASE_PER_S,
   terrainZ,
@@ -50,13 +54,14 @@ import {
   BASS_TOP_DEGREE,
   clampDegree,
   ELEV_BANDS,
-  MAX_BASS_PER_STEP,
-  MAX_NOTES_PER_STEP,
+  MAX_BASS_PER_WINDOW,
+  MAX_NOTES_PER_WINDOW,
   MAX_ROTATION_STEPS,
   noteName,
+  REV_MS,
   STEP_ANGLE,
   STEP_MS,
-  STEPS,
+  VOICE_WINDOW_MS,
 } from './lib/pitch';
 import { meshGrid } from './meshLayout';
 import './styles.css';
@@ -64,10 +69,32 @@ import './styles.css';
 // The sweep's tempo and step count live in lib/pitch.ts, next to the scale — they
 // are musical settings, not drawing settings. Deliberately not controls.
 const SWEEP_SAMPLES = 90; // points along the ray, so the line drapes over terrain
-const TRAIL_RAYS = 5; // lit sectors trailing the live ray
+const TRAIL_RAYS = 7; // ghost rays trailing the live one, forming the smear
+const TRAIL_SPREAD = 0.4; // radians the whole trail covers
 
 const MAX_PAN = 0.85;
 const FLARE_MS = 340;
+
+// Percussion divisions per revolution. 16 over a 3840ms pass puts a kick every
+// 480ms — 125bpm, the tempo the sweep was originally clocked at, with hats on the
+// offbeats between them.
+const BEAT_PER_REV = 16;
+
+// The tilt control runs backwards: hard left is the lowest, most cinematic angle
+// (the default) and pulling right raises the camera toward plan view. So the track
+// carries "how far from the default", and the slider's own value is the inverse of
+// the angle — which is why the readout is computed rather than bound directly.
+const TILT_DEG_MIN = Math.round((TILT_MIN * 180) / Math.PI);
+const TILT_DEG_MAX = Math.round((TILT_MAX * 180) / Math.PI);
+
+// Rotation glides instead of jumping. Time constant of an exponential ease, so a
+// notch covers most of its travel in about this long and settles without
+// overshoot — a spring would wobble the terrain past its landing angle and the
+// pitch would flicker across the boundary with it.
+const ROT_EASE_MS = 620;
+// Below this the glide is finished; snapping the remainder stops an asymptote
+// from re-sorting peak positions by fractions of a pixel forever.
+const ROT_SETTLE = 0.0004;
 
 // Click splash — render-only, never touches the terrain. The visual receipt
 // that something landed.
@@ -119,11 +146,37 @@ export default function SoundingLine() {
   // loop can read it without re-running the effect and rebuilding the mesh.
   const [rotationSteps, setRotationSteps] = useState(0);
   const rotationRef = useRef(0);
+  // Tilt is held in degrees for the control and converted to radians for the
+  // projection — a slider labelled in radians is a slider nobody can read.
+  const [tiltDeg, setTiltDeg] = useState(Math.round((TILT * 180) / Math.PI));
+  const tiltRef = useRef(TILT);
+  // Sound layers, in the spirit of step-sequencer's channel toggles: the pleasure
+  // of that experiment was hearing the same pattern with the beat and without it.
+  // Low and high are on because they are the piece; the beat is an addition, so it
+  // starts off and is something you find.
+  const [layers, setLayers] = useState({ low: true, high: true, beat: false });
+  const layersRef = useRef(layers);
+  const [muted, setMuted] = useState(false);
+  const mutedRef = useRef(false);
+  const engineRef = useRef<Engine | null>(null);
   const resetRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     rotationRef.current = rotationSteps;
   }, [rotationSteps]);
+
+  useEffect(() => {
+    tiltRef.current = (tiltDeg * Math.PI) / 180;
+  }, [tiltDeg]);
+
+  useEffect(() => {
+    layersRef.current = layers;
+  }, [layers]);
+
+  useEffect(() => {
+    mutedRef.current = muted;
+    engineRef.current?.setMuted(muted);
+  }, [muted]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -132,6 +185,8 @@ export default function SoundingLine() {
     if (!ctx) return;
 
     const engine = createEngine();
+    engineRef.current = engine;
+    engine.setMuted(mutedRef.current);
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     const peaks: Peak[] = [];
@@ -145,10 +200,32 @@ export default function SoundingLine() {
     let maxRadius = 1;
     let discRadius = 1;
 
-    // Sweep angle is tracked unwrapped and monotonic so a crossing can be
-    // interpolated to an exact wall-clock moment and handed to the audio clock.
-    let lastStep = -1;
+    // Sweep position is tracked in revolutions — unwrapped, fractional and
+    // monotonic — so a crossing resolves to an exact wall-clock moment that can be
+    // handed to the audio clock.
+    let revs = 0;
     let originMs = 0;
+    // Last percussion division fired, so a dropped frame catches up rather than
+    // silently swallowing a beat.
+    let lastPulse = -1;
+    // Wall-clock times of recently sounded notes, for the rolling voice budget.
+    let recentNotes: number[] = [];
+    let recentBass: number[] = [];
+
+    // The slider's value is a target; this is where the composition actually is.
+    // Everything that has to agree with what the eye sees — peak positions, the
+    // marker labels, the plaque, the pitch that sounds — reads these two rather
+    // than the slider, so a note can never name a position the terrain has not
+    // reached yet.
+    let rotAngle = 0;
+    let liveTranspose = 0;
+
+    // Tilt eases toward the slider on the same curve as rotation, so changing the
+    // angle reads as the camera swinging down rather than as a cut. `view` is the
+    // frame's precomputed sin/cos, rebuilt once per frame and handed to every
+    // projection so the whole scene is drawn from one camera.
+    let tiltAngle = TILT;
+    let view = viewFor(TILT);
     // Camera distance, eased toward whatever the current terrain needs. Seeded at
     // CAM_Z so the first frame is 1:1 rather than snapping outward.
     let camZ = CAM_Z;
@@ -215,7 +292,7 @@ export default function SoundingLine() {
     // World point at a given depth → screen. renderZ is negative for high ground,
     // so height is its negation.
     function project(x: number, y: number, renderZ: number): [number, number] {
-      const { sx, sy } = projectPoint(x - cx, y - cy, -renderZ, camZ);
+      const { sx, sy } = projectPoint(x - cx, y - cy, -renderZ, camZ, view);
       return [cx + sx, cy + sy];
     }
 
@@ -273,7 +350,13 @@ export default function SoundingLine() {
           }
           merged.target = next;
         } else {
-          peaks.push(makePeak(nextId++, seed.x, seed.y, seed.amp, cx, cy, timestamp));
+          // The current rotation has to be passed, not defaulted: makePeak stores
+          // the bearing unrotated, and applyRotation adds the rotation back on the
+          // next frame. Planting at rotation 0 while the composition is turned
+          // therefore threw the chord off the pointer by the whole rotation angle.
+          peaks.push(
+            makePeak(nextId++, seed.x, seed.y, seed.amp, cx, cy, timestamp, rotAngle)
+          );
           // Density guard — drop the oldest so the map can't silt up.
           if (peaks.length > MAX_PEAKS) peaks.shift();
         }
@@ -296,50 +379,91 @@ export default function SoundingLine() {
     window.addEventListener('pointerleave', onPointerLeave);
 
     // --- The sweep ----------------------------------------------------------
-    // The line advances in discrete steps rather than gliding. Quantizing the
-    // audio to a grid while the line moved continuously would desync the two — a
-    // peak would sound before or after the line reached it, which is fatal for an
-    // exhibit whose whole premise is that you hear what you see. Stepping the line
-    // instead keeps them exact: the line is *in* the sector when the sector sounds.
-    function fireStep(step: number, W: number) {
-      const sector = ((step % STEPS) + STEPS) % STEPS;
-      const when = originMs + step * STEP_MS;
+    // The line glides and every peak sounds at the instant the line reaches it.
+    //
+    // Sight and sound stay locked because the crossing is solved rather than
+    // sampled: a peak at bearing θ is crossed on revolution k at exactly
+    // originMs + (θ/2π + k) * REV_MS, which is a wall-clock moment the audio
+    // clock can be handed even though it falls between two frames. Firing on the
+    // frame the line passed the peak would flam by up to 16ms and drift audibly
+    // from the visual.
+    function soundCrossings(toRev: number, W: number) {
+      const twoPi = Math.PI * 2;
+      const transpose = liveTranspose;
+      const crossings: { p: Peak; when: number }[] = [];
 
-      // Everything in this sector strikes together — visually always, audibly
-      // within the voice budget.
-      const firing = peaks.filter(p => p.sector === sector);
-      for (const p of firing) p.struckAt = when;
-      if (!engine.ready() || firing.length === 0) return;
+      for (const p of peaks) {
+        const phase = p.angle / twoPi;
+        // Latest revolution index whose crossing has already happened.
+        const k = Math.floor(toRev - phase);
+        if (k < 0 || k <= p.lastRev) continue;
+        p.lastRev = k;
+        crossings.push({ p, when: originMs + (phase + k) * REV_MS });
+      }
+      if (crossings.length === 0) return;
 
-      // Tallest first: when a sector is over budget, the summits are what the
-      // visitor built and what they expect to hear.
-      const ordered = [...firing].sort((a, b) => b.band - a.band);
-      const audioTime = engine.at(when);
-      const transpose = rotationRef.current;
-      let voices = 0;
-      let bass = 0;
-      const played = new Set<number>();
+      // Tallest first: when the budget bites, the summits are what the visitor
+      // built and what they expect to hear.
+      crossings.sort((a, b) => b.p.band - a.p.band);
 
-      for (const p of ordered) {
-        if (voices >= MAX_NOTES_PER_STEP) break;
-        // Rotation transposes: one notch round is one scale degree up.
+      for (const { p, when } of crossings) {
+        p.struckAt = when;
+        if (!engine.ready()) continue;
+
+        // Rolling budget: pentatonic keeps any pile-up consonant, but a dense
+        // mesh still needs a ceiling on simultaneous voices. Counted over a
+        // window in time now that there are no steps to count against.
+        const windowStart = when - VOICE_WINDOW_MS;
+        const inWindow = recentNotes.filter(t => t >= windowStart);
+        if (inWindow.length >= MAX_NOTES_PER_WINDOW) continue;
+
         const degree = clampDegree(p.band + transpose);
-        // One note per pitch — a doubled degree is a louder note, not a new one.
-        if (played.has(degree)) continue;
         const isBass = degree <= BASS_TOP_DEGREE;
-        if (isBass && bass >= MAX_BASS_PER_STEP) continue;
+        // Layer gate. Switching a register off silences it without touching the
+        // terrain — the flare still fires, so a muted peak still visibly answers
+        // the line and the composition you can see stays whole.
+        if (isBass ? !layersRef.current.low : !layersRef.current.high) continue;
+        // Low frequencies smear long before the upper register does, so the
+        // bass gets a tighter ceiling of its own.
+        if (isBass && recentBass.filter(t => t >= windowStart).length >= MAX_BASS_PER_WINDOW) {
+          continue;
+        }
 
-        // Duration in whole steps, so notes end on the grid instead of smearing
-        // across the next hit. Distant peaks ring for two steps, near ones clip
-        // short — the radius variation survives quantization.
-        const steps = p.radius / maxRadius > 0.55 ? 2 : 1;
-        const dur = (steps * STEP_MS * 0.9) / 1000;
+        // Distant peaks hold longer than near ones, so the radius reads as
+        // sustain. The pad's own tail runs well past this either way.
+        const long = p.radius / maxRadius > 0.55;
+        const dur = ((long ? 2 : 1) * STEP_MS * 0.9) / 1000;
         const pan = Math.max(-MAX_PAN, Math.min(MAX_PAN, ((p.x - W / 2) / (W / 2)) * MAX_PAN));
-        engine.note(degree, audioTime, dur, pan);
+        engine.note(degree, engine.at(when), dur, pan);
 
-        played.add(degree);
-        voices++;
-        if (isBass) bass++;
+        recentNotes.push(when);
+        if (isBass) recentBass.push(when);
+      }
+
+      // Trim the budget history to the window that can still matter.
+      if (recentNotes.length > 32) {
+        const cutoff = originMs + toRev * REV_MS - VOICE_WINDOW_MS * 2;
+        recentNotes = recentNotes.filter(t => t >= cutoff);
+        recentBass = recentBass.filter(t => t >= cutoff);
+      }
+    }
+
+    // The beat runs on the revolution rather than on the terrain.
+    //
+    // Percussion has no pitch to take from a peak, so there is nothing for it to
+    // read off the landscape — it divides the sweep's own cycle instead. Locking it
+    // to the revolution means the beat and the sweep never drift apart, so a peak
+    // near a division reliably lands on the beat and the whole pass has a pulse
+    // without the pads being quantized back onto a grid.
+    function soundBeat(toRev: number) {
+      if (!engine.ready() || !layersRef.current.beat) return;
+      const pulse = Math.floor(toRev * BEAT_PER_REV);
+      while (lastPulse < pulse) {
+        lastPulse++;
+        const when = originMs + (lastPulse / BEAT_PER_REV) * REV_MS;
+        const at = engine.at(when);
+        if (lastPulse % 2 === 0) engine.drum('kick', at);
+        else engine.drum('hat', at);
       }
     }
 
@@ -406,7 +530,7 @@ export default function SoundingLine() {
         ctx.closePath();
         ctx.fill();
 
-        const label = noteName(clampDegree(p.band + rotationRef.current));
+        const label = noteName(clampDegree(p.band + liveTranspose));
         const lx = sx + 9;
         // Dark plate behind the type so it stays readable over bright terrain.
         const w = ctx.measureText(label).width;
@@ -461,7 +585,7 @@ export default function SoundingLine() {
       if (!seeded) {
         seeded = true;
         for (const seed of composeScatter(cx, cy, discRadius)) {
-          peaks.push(seedToPeak(seed, nextId++, cx, cy, timestamp));
+          peaks.push(seedToPeak(seed, nextId++, cx, cy, timestamp, rotAngle));
         }
       }
 
@@ -481,11 +605,35 @@ export default function SoundingLine() {
           peaks.splice(i, 1);
         }
       }
-      // Rotation turns the landforms through the fixed lattice and re-sectors them,
-      // so the same gesture shifts the pattern in time. The matching transpose is
-      // applied where notes are sounded.
-      const transpose = rotationRef.current;
-      applyRotation(peaks, cx, cy, transpose * STEP_ANGLE);
+      // Rotation turns the landforms through the fixed lattice, so the same gesture
+      // shifts when each one is crossed. The matching transpose is applied where
+      // notes are sounded.
+      //
+      // The slider steps, but the composition glides to it: the terrain arriving
+      // as slowly as the sweep travels is what keeps the piece feeling turned
+      // rather than switched. Pitch cannot glide with it — there are no degrees
+      // between scale degrees — so the transpose flips at the halfway point,
+      // which is also the moment the terrain most looks like it has arrived.
+      const rotTarget = rotationRef.current * STEP_ANGLE;
+      const gap = rotTarget - rotAngle;
+      rotAngle =
+        Math.abs(gap) < ROT_SETTLE
+          ? rotTarget
+          : rotAngle + gap * (1 - Math.exp((-dt * 1000) / ROT_EASE_MS));
+      liveTranspose = Math.round(rotAngle / STEP_ANGLE);
+      applyRotation(peaks, cx, cy, rotAngle);
+
+      // Tilt glides on the same curve, then the camera basis is rebuilt for the
+      // frame. Swinging the camera down toward the horizon is what gives a tall
+      // range somewhere to stand: distance compresses the far half of the plane,
+      // so height costs less vertical screen space the lower the angle gets.
+      const tiltTarget = Math.max(TILT_MIN, Math.min(TILT_MAX, tiltRef.current));
+      const tiltGap = tiltTarget - tiltAngle;
+      tiltAngle =
+        Math.abs(tiltGap) < ROT_SETTLE
+          ? tiltTarget
+          : tiltAngle + tiltGap * (1 - Math.exp((-dt * 1000) / ROT_EASE_MS));
+      view = viewFor(tiltAngle);
 
       // Bands come from the summed terrain, so a merged ridge lifts the pitch of
       // both peaks.
@@ -493,14 +641,13 @@ export default function SoundingLine() {
         p.band = bandOf(elevOf(terrainZ(p.x, p.y, peaks), elevScale));
       }
 
-      // Advance the sweep one step at a time and sound each sector it lands on.
-      // Catching up in a loop means a dropped frame delays notes instead of
-      // silently skipping them.
-      const step = Math.floor((timestamp - originMs) / STEP_MS);
-      while (lastStep < step) {
-        lastStep++;
-        fireStep(lastStep, W);
-      }
+      // Advance the sweep and sound everything the line passed. Crossings are
+      // resolved against the peak's own bearing rather than per frame, so a
+      // dropped frame still fires its notes at their true moments instead of
+      // bunching them onto the recovery frame.
+      revs = (timestamp - originMs) / REV_MS;
+      soundCrossings(revs, W);
+      soundBeat(revs);
 
       // Cull dead splash waves once per frame.
       if (waves.length) {
@@ -514,7 +661,7 @@ export default function SoundingLine() {
       // every node twice.
       const idle = !reduced && lastClickMs > 0 && timestamp - lastClickMs > IDLE_AFTER_MS;
       breath += ((idle ? 1 : 0) - breath) * (1 - Math.exp(-dt * BREATH_EASE_PER_S));
-      const camTarget = cameraFor(maxDepth) * (1 + (IDLE_MARGIN - 1) * breath);
+      const camTarget = cameraFor(maxDepth, view) * (1 + (IDLE_MARGIN - 1) * breath);
       camZ += (camTarget - camZ) * (1 - Math.exp(-dt * CAM_EASE_PER_S));
 
       const scaleEase = 1 - Math.exp(-dt * SCALE_EASE_PER_S);
@@ -549,7 +696,7 @@ export default function SoundingLine() {
         if (z < -frameMaxDepth) frameMaxDepth = -z;
         if (-z > frameMaxUp) frameMaxUp = -z;
         else if (z > frameMaxDown) frameMaxDown = z;
-        const proj = projectPoint(node.x - cx, node.y - cy, -z, camZ);
+        const proj = projectPoint(node.x - cx, node.y - cy, -z, camZ, view);
         px[i] = cx + proj.sx;
         py[i] = cy + proj.sy;
         elev[i] = elevOf(z, elevScale);
@@ -613,13 +760,13 @@ export default function SoundingLine() {
         ctx.fill();
       }
 
-      // Sweep: the sectors just left glow and fade, then the live ray draws over
-      // them. Because the line steps, the trail is a row of discrete lit spokes
-      // rather than a smear — it reads as a clock hand ticking round.
-      const angle = normAngle(lastStep * STEP_ANGLE);
+      // Sweep: ghost rays fan out behind the live one and fade, so the glide
+      // leaves a smear of light rather than a row of discrete lit spokes.
+      const angle = normAngle(revs * Math.PI * 2);
       if (!reduced) {
+        const gap = TRAIL_SPREAD / TRAIL_RAYS;
         for (let i = TRAIL_RAYS; i >= 1; i--) {
-          drapedRay(angle - i * STEP_ANGLE, 0.075 * (1 - i / (TRAIL_RAYS + 1)), 1);
+          drapedRay(angle - i * gap, 0.085 * (1 - i / (TRAIL_RAYS + 1)), 1);
         }
       }
       drapedRay(angle, 0.42, 1.1);
@@ -657,7 +804,7 @@ export default function SoundingLine() {
             left: pos.left,
             top: pos.top,
             flipped: pos.flipped,
-            plaque: makePlaque(p.x, p.y, W, H, p.band, p.amp, clampDegree(p.band + rotationRef.current)),
+            plaque: makePlaque(p.x, p.y, W, H, p.band, p.amp, clampDegree(p.band + liveTranspose)),
           });
         }
         drawLeader(foundX, foundY, W, H);
@@ -693,7 +840,20 @@ export default function SoundingLine() {
     <div className="sounding-line-container">
       <canvas ref={canvasRef} className="sounding-line-canvas" />
       <div className="sl-controls">
-        {!audioLive && <span className="sl-muted">SOUND OFF</span>}
+        {!audioLive && !muted && <span className="sl-muted">CLICK TO START</span>}
+        <div className="sl-layers">
+          {(['low', 'high', 'beat'] as const).map(key => (
+            <button
+              key={key}
+              type="button"
+              className={`sl-layer${layers[key] ? ' is-on' : ''}`}
+              aria-pressed={layers[key]}
+              onClick={() => setLayers(prev => ({ ...prev, [key]: !prev[key] }))}
+            >
+              {key.toUpperCase()}
+            </button>
+          ))}
+        </div>
         <label className="sl-rotate">
           <span className="sl-rotate-label">ROTATE</span>
           <input
@@ -709,8 +869,30 @@ export default function SoundingLine() {
             {rotationSteps > 0 ? `+${rotationSteps}` : rotationSteps}
           </span>
         </label>
+        <label className="sl-rotate">
+          <span className="sl-rotate-label">TILT</span>
+          <input
+            type="range"
+            min={0}
+            max={TILT_DEG_MAX - TILT_DEG_MIN}
+            step={1}
+            value={TILT_DEG_MAX - tiltDeg}
+            onChange={e => setTiltDeg(TILT_DEG_MAX - Number(e.target.value))}
+            aria-label="Tilt the camera between horizon and overhead"
+            aria-valuetext={`${tiltDeg} degrees`}
+          />
+          <span className="sl-rotate-value">{tiltDeg}&deg;</span>
+        </label>
         <button type="button" className="sl-reset" onClick={() => resetRef.current()}>
           RESET
+        </button>
+        <button
+          type="button"
+          className={`sl-reset${muted ? ' is-off' : ''}`}
+          aria-pressed={muted}
+          onClick={() => setMuted(m => !m)}
+        >
+          {muted ? 'UNMUTE' : 'MUTE'}
         </button>
       </div>
       {hover && (
