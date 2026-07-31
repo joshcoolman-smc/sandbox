@@ -1,0 +1,295 @@
+.sounding-line-container {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: #050505;
+}
+
+/* Magnetic backdrop — beneath the mesh, pointer-driven, untouched by terrain. */
+.sl-field-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+}
+
+.sounding-line-canvas {
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1;
+  cursor: crosshair;
+}
+
+/* The plaque. Width/height must track PANEL_W/PANEL_H in page.tsx so the canvas
+   leader line lands on the panel edge. */
+.sl-plaque {
+  position: absolute;
+  width: 252px;
+  pointer-events: none;
+  z-index: 10;
+  font-family: var(--font-space-mono), ui-monospace, monospace;
+  color: #eaeaea;
+  background: rgba(8, 12, 18, 0.78);
+  border: 1px solid rgba(245, 245, 240, 0.16);
+  padding: 12px 14px 11px;
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.sl-plaque.is-visible {
+  opacity: 1;
+  transform: none;
+  /* Runs as an animation because the element mounts with this class already
+     applied — a transition alone would never fire. */
+  animation: sl-plaque-in 0.34s ease;
+}
+
+@keyframes sl-plaque-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Faint scanlines for the instrument feel */
+.sl-plaque::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.03) 0px,
+    rgba(255, 255, 255, 0.03) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+.sl-plaque-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 9px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+  padding-bottom: 7px;
+  margin-bottom: 9px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+  white-space: nowrap;
+}
+
+.sl-cursor {
+  display: inline-block;
+  width: 6px;
+  height: 10px;
+  background: #fff;
+  animation: sl-blink 1s steps(1) infinite;
+}
+
+@keyframes sl-blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  50.01%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* The note name, inked in its own band colour — the mapping, stated once. */
+.sl-plaque-note {
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  margin-bottom: 12px;
+  white-space: nowrap;
+}
+
+.sl-plaque-rows {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.sl-plaque-row {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 10px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.sl-k {
+  color: rgba(255, 255, 255, 0.42);
+  text-transform: uppercase;
+}
+
+.sl-v {
+  color: #e9e9e9;
+}
+
+.sl-plaque-ref {
+  font-size: 8.5px;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.4);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  padding-top: 7px;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sl-plaque.is-visible {
+    animation: none;
+  }
+
+  .sl-cursor {
+    animation: none;
+  }
+}
+
+.sl-controls {
+  position: absolute;
+  bottom: 108px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-space-mono), ui-monospace, monospace;
+}
+/* Controls sit under the composition, not over it. At the top right they competed
+   with the terrain for the same corner and read as part of the header; below the
+   mesh they read as the console for the thing above them, and the landscape gets
+   the whole frame. Centred, because the composition is centred. */
+
+.sl-muted {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 9px;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  color: rgba(232, 62, 44, 0.85);
+  white-space: nowrap;
+}
+/* Lifted out of the flex row on purpose: inline, it padded the row and the whole
+   console shifted sideways the moment audio started. */
+
+.sl-reset {
+  appearance: none;
+  background: rgba(8, 12, 18, 0.72);
+  border: 1px solid rgba(245, 245, 240, 0.22);
+  color: rgba(245, 245, 240, 0.82);
+  font: inherit;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  padding: 6px 11px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.sl-reset:hover {
+  border-color: rgba(245, 245, 240, 0.55);
+  color: #f5f5f0;
+}
+
+/* Rotation. One notch turns the composition one step and transposes it one scale
+   degree — a slider rather than a drag, because a drag cannot be held. */
+.sl-rotate {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: rgba(8, 12, 18, 0.72);
+  border: 1px solid rgba(245, 245, 240, 0.22);
+  padding: 5px 10px;
+}
+
+.sl-rotate-label,
+.sl-rotate-value {
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  color: rgba(245, 245, 240, 0.62);
+  white-space: nowrap;
+}
+
+.sl-rotate-value {
+  min-width: 18px;
+  text-align: right;
+  color: rgba(245, 245, 240, 0.9);
+}
+
+.sl-rotate input[type='range'] {
+  appearance: none;
+  width: 96px;
+  height: 2px;
+  background: rgba(245, 245, 240, 0.28);
+  cursor: ew-resize;
+}
+
+.sl-rotate input[type='range']::-webkit-slider-thumb {
+  appearance: none;
+  width: 9px;
+  height: 15px;
+  background: #e83e2c;
+  border: none;
+  cursor: ew-resize;
+}
+
+.sl-rotate input[type='range']::-moz-range-thumb {
+  width: 9px;
+  height: 15px;
+  background: #e83e2c;
+  border: none;
+  cursor: ew-resize;
+}
+
+.sl-layers {
+  display: flex;
+  gap: 5px;
+}
+
+.sl-layer {
+  appearance: none;
+  background: rgba(8, 12, 18, 0.72);
+  border: 1px solid rgba(245, 245, 240, 0.16);
+  color: rgba(245, 245, 240, 0.4);
+  font: inherit;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  padding: 6px 9px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
+}
+/* A layer that is off has to look off at a glance — the toggles are the one place
+   in this UI where current state matters more than the label. */
+
+.sl-layer.is-on {
+  border-color: rgba(232, 62, 44, 0.6);
+  color: #f5f5f0;
+  background: rgba(232, 62, 44, 0.14);
+}
+
+.sl-layer:hover {
+  border-color: rgba(245, 245, 240, 0.5);
+  color: #f5f5f0;
+}
+
+.sl-reset.is-off {
+  border-color: rgba(232, 62, 44, 0.6);
+  color: rgba(232, 62, 44, 0.9);
+}

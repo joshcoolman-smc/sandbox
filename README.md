@@ -34,6 +34,20 @@ Experiments degrade gracefully without their keys set — Monono, for example, s
 
 ## Experiments
 
+### Sounding Line
+
+**July 31, 2026**
+
+[![Sounding Line](./public/screenshots/sounding-line.png)](/design-experiments/sounding-line)
+
+A playable topography. Click to raise a peak and it stays; a line sweeps continuously from the centre and every peak it crosses plays a note pitched to that peak's elevation, so the topographic color you see is the note you hear. Elevation quantizes into sixteen color bands and C major pentatonic spans exactly sixteen degrees, so one array picks both the color and the pitch and nothing you build can be out of key. The voice is a pad, so peaks bloom and overlap into a bed; a console under the composition toggles registers and a drum layer, orbits the range, and swings the camera from overhead to a near-horizon landscape.
+
+`Audio` `Web Audio API` `Canvas` `Generative` `Interactive`
+
+**[View Live →](https://www.joshcoolman.com/design-experiments/sounding-line) | [View Code →](https://github.com/joshcoolman/sandbox/tree/main/app/design-experiments/(experiments)/sounding-line)**
+
+---
+
 ### Adaptive Grid
 
 **June 14, 2026**
