@@ -46,7 +46,17 @@ function pick<T>(arr: T[], i: number): T {
 // reason rotation can never carry a peak off the map.
 const RIM_MARGIN = 0.88;
 
-export function composeScatter(cx: number, cy: number, discRadius: number): Seed[] {
+// An anchor makes a generated composition answer to a click: the first pulse peak
+// lands on the clicked bearing at the clicked distance, so a summit appears exactly
+// where the pointer was while everything else re-scatters around it.
+export type Anchor = { angle: number; frac: number; sparse: boolean };
+
+export function composeScatter(
+  cx: number,
+  cy: number,
+  discRadius: number,
+  anchor?: Anchor,
+): Seed[] {
   const seeds: Seed[] = [];
   // Wide separation, because depth is additive: seeds that crowd stop reading as
   // separate summits and pool into a plateau.
@@ -65,11 +75,18 @@ export function composeScatter(cx: number, cy: number, discRadius: number): Seed
   };
 
   // Rotate the whole composition so no two loads look alike, but keep the
-  // intervals intact — the pulse stays even wherever it starts.
-  const phase = Math.random() * Math.PI * 2;
+  // intervals intact — the pulse stays even wherever it starts. A click supplies
+  // the phase instead of chance, which is what ties the result to the gesture.
+  const phase = anchor ? anchor.angle : Math.random() * Math.PI * 2;
+  // A shift-click composes the same shapes lower in the range — same arrangement,
+  // darker reading.
+  const shade = anchor?.sparse ? -4 : 0;
 
   PULSE_STEPS.forEach((step, i) => {
-    place(phase + step * STEP, 0.42 + Math.random() * 0.2, ampForBand(pick(PULSE_BANDS, i)));
+    // The anchored peak takes the clicked distance so the summit lands under the
+    // pointer; the rest keep their generated spread.
+    const frac = i === 0 && anchor ? anchor.frac : 0.42 + Math.random() * 0.2;
+    place(phase + step * STEP, frac, ampForBand(pick(PULSE_BANDS, i) + shade));
   });
 
   MELODY_STEPS.forEach((step, i) => {
@@ -79,7 +96,7 @@ export function composeScatter(cx: number, cy: number, discRadius: number): Seed
     place(
       phase + step * STEP + jitter,
       0.26 + Math.random() * 0.62,
-      ampForBand(pick(MELODY_BANDS, i)),
+      ampForBand(pick(MELODY_BANDS, i) + shade),
     );
   });
 
@@ -101,53 +118,4 @@ export function seedToPeak(
   // layout is composed in screen space, so it has to be stored relative to where
   // the composition currently sits or a reset while turned lands askew.
   return makePeak(id, seed.x, seed.y, seed.amp, cx, cy, now, rotation, true);
-}
-
-// A click plants a chord, not a note.
-//
-// One click, one peak meant a dozen clicks before anything was worth hearing. A
-// spoke of peaks shares one bearing, so the sweep crosses them all at the same
-// instant and strikes them
-// together — the click becomes a stacked multi-tone the way holding a column in a
-// step sequencer does, and the terrain gains a ridge running outward rather than a
-// lone pimple.
-//
-// Offsets are pentatonic degrees from the struck band: +2 is a third, +5 an
-// octave. Any root gives a consonant stack, so aim barely matters.
-const CHORD_OFFSETS = [0, 2, 4];
-const BASIN_OFFSETS = [0, -2];
-const SPOKE_GAP = MERGE_DIST * 3.4;
-
-export function composeChord(
-  x: number,
-  y: number,
-  isBasin: boolean,
-  cx: number,
-  cy: number,
-  discRadius: number,
-): Seed[] {
-  const angle = Math.atan2(y - cy, x - cx);
-  const ca = Math.cos(angle);
-  const sa = Math.sin(angle);
-  const reach = discRadius * RIM_MARGIN;
-  // A click outside the disc still plays — it is pulled to the rim rather than
-  // ignored, because a dead zone is a fail state.
-  const clicked = Math.min(Math.hypot(x - cx, y - cy), reach);
-
-  const rootBand = isBasin ? BASIN_ROOT_BAND : CLICK_ROOT_BAND;
-  const offsets = isBasin ? BASIN_OFFSETS : CHORD_OFFSETS;
-
-  const seeds: Seed[] = [];
-  offsets.forEach((offset, i) => {
-    // Spread outward from the click along its own spoke, folding back inward if
-    // the mesh edge is in the way, so a click near the rim still gets its chord.
-    let r = clicked + i * SPOKE_GAP;
-    if (r > reach - SPOKE_GAP * 0.5) r = clicked - i * SPOKE_GAP;
-    if (r < SPOKE_GAP * 0.5) return;
-
-    const band = Math.max(0, Math.min(ELEV_BANDS - 1, rootBand + offset));
-    seeds.push({ x: cx + ca * r, y: cy + sa * r, amp: ampForBand(band) });
-  });
-
-  return seeds;
 }

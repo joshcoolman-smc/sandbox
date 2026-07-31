@@ -34,7 +34,6 @@ const SIGMA_REF = 1690;
 
 export const CLICK_ROOT_BAND = 9; // a click's chord root: A3, palette turning warm
 export const BASIN_ROOT_BAND = 1; // shift-click: deep blue, below every peak
-export const CLICK_BOOST = 300; // one restack, one step along the cycle
 
 // Peaks are broad and tall on purpose. Depth is additive, so wide gaussians
 // crowding each other used to sum into one saturated plateau, and two passes were
@@ -55,7 +54,7 @@ export function peakSigma(amp: number): number {
 const REACH_SIGMAS = 3.2;
 
 export const RISE_MS = 420; // amp eases in — the mountain still rises
-export const MERGE_DIST = CELL_SIZE * 0.9; // click this close and it stacks
+export const MERGE_DIST = CELL_SIZE * 0.9; // generator's minimum peak separation unit
 export const MAX_PEAKS = 48; // density guard; the oldest peak is dropped
 export const PEAK_MIN_AMP = 14;
 
@@ -82,14 +81,6 @@ export function ampForBand(band: number): number {
     ? ((e - BASE_ELEV) / (TOP_ELEV - BASE_ELEV)) * UP_FLOOR
     : -((BASE_ELEV - e) / BASE_ELEV) * DOWN_FLOOR;
 }
-
-// Clicking the same place again cycles: up the scale to the top band, then back
-// down to the bottom, then up again. Shift-click still carves a basin outright, but
-// it is no longer something you have to *know* — hold the pointer somewhere and
-// keep clicking and the terrain breathes up and down on its own. A gesture nobody
-// has to be told about beats a modifier key nobody discovers.
-export const CYCLE_TOP = ampForBand(ELEV_BANDS - 1);
-export const CYCLE_BOTTOM = ampForBand(0);
 
 // Every peak is built here, so angle/radius can never be derived two
 // different ways. `risen` is for seeded terrain, which should already be standing
@@ -121,7 +112,6 @@ export function makePeak(
     angle,
     lastRev: -Infinity,
     radius: Math.hypot(x - cx, y - cy),
-    dir: 1,
     struckAt: -1,
   };
 }
@@ -154,7 +144,6 @@ export type Peak = {
   lastRev: number; // revolution index this peak last sounded on, so the
   // continuous sweep fires it exactly once per pass
   radius: number; // from mesh centre — sets note length
-  dir: 1 | -1; // which way the next restack moves it along the cycle
   struckAt: number; // last time the sweep hit it, for the flare
 };
 

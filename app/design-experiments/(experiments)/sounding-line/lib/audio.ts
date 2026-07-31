@@ -14,8 +14,8 @@
 // sweep's exact crossing moment gets converted into audio-clock time and
 // scheduled ahead. See `at()`.
 
-import { playHat, playKick } from '../../step-sequencer/lib/voices';
-import { freqForDegree, MAX_DEGREE, voiceForDegree } from './pitch';
+import { playClap, playHat, playKick } from '../../step-sequencer/lib/voices';
+import { freqForDegree, type Layer, MAX_DEGREE } from './pitch';
 
 // How far ahead of the audio clock notes are scheduled. Must exceed one frame
 // so an interpolated crossing that already happened still lands in the future.
@@ -25,6 +25,7 @@ const BASS_GAIN = 0.15;
 const LEAD_GAIN = 0.1;
 const KICK_GAIN = 0.3;
 const HAT_GAIN = 0.055;
+const CLAP_GAIN = 0.09;
 
 // Muting rides a gain ramp rather than suspending the context: notes already
 // scheduled keep their timing, so unmuting drops back into the pass in progress
@@ -33,8 +34,11 @@ const MUTE_RAMP_S = 0.12;
 
 // The tail rings well past the sweep's step grid — that overlap is the whole
 // point of a pad, and pentatonic means the resulting chords can't sour.
-const RELEASE_S = 2.2;
-const BASS_RELEASE_S = 2.8;
+const RELEASE_S = 1.4;
+// The bass tail has to end before the next root arrives, or the low end is a smear
+// you cannot count notes in — the mistake that made a four-per-pass bass line still
+// sound like a drone. A group is 960ms; this leaves it audible space.
+const BASS_RELEASE_S = 0.55;
 
 // Reverb impulse length. Long enough to read as a space rather than a room.
 const IR_SECONDS = 3.2;
@@ -45,9 +49,11 @@ export type Engine = {
   ready(): boolean;
   // Converts a performance.now() timestamp into a schedulable audio time.
   at(perfMs: number): number;
-  note(degree: number, when: number, dur: number, pan: number): void;
+  // `layer` picks the voice, not the degree. Register and orchestration are
+  // separate questions now: the same peak can sound in three layers at once.
+  note(layer: Layer, degree: number, when: number, dur: number, pan: number): void;
   // Percussion is its own layer with its own clock — see the drum comment below.
-  drum(kind: 'kick' | 'hat', when: number): void;
+  drum(kind: 'kick' | 'hat' | 'clap', when: number): void;
   setMuted(muted: boolean): void;
   close(): void;
 };
@@ -147,11 +153,13 @@ export function createEngine(): Engine {
     return t < ctx.currentTime ? ctx.currentTime : t;
   }
 
-  function note(degree: number, when: number, dur: number, pan: number) {
+  function note(layer: Layer, degree: number, when: number, dur: number, pan: number) {
     if (!ctx || !dry || !wet) return;
     const freq = freqForDegree(degree);
-    const voice = voiceForDegree(degree);
-    const isBass = voice.kind === 'bass';
+    // The layer decides the voice. A low note is a sub whether it came from a
+    // shallow bump or from the base of a summit, which is what makes the toggles
+    // read as instruments rather than as a band-pass over the terrain.
+    const isBass = layer === 'low';
     const release = isBass ? BASS_RELEASE_S : RELEASE_S;
 
     // Elevation, normalized over the span actually in play.
@@ -196,7 +204,7 @@ export function createEngine(): Engine {
     // Detuned pair plus a sub octave. The beating between the pair is the
     // analog character — mathematically identical oscillators sound sterile.
     const spread = isBass ? 5 : 9;
-    const layers: Array<{ type: OscillatorType; detune: number; mix: number }> = isBass
+    const stack: Array<{ type: OscillatorType; detune: number; mix: number }> = isBass
       ? [
           { type: 'sine', detune: 0, mix: 1 },
           { type: 'triangle', detune: spread, mix: 0.5 },
@@ -210,14 +218,14 @@ export function createEngine(): Engine {
         ];
 
     const oscs: OscillatorNode[] = [];
-    for (const layer of layers) {
-      if (layer.mix <= 0.001) continue;
+    for (const part of stack) {
+      if (part.mix <= 0.001) continue;
       const osc = ctx.createOscillator();
-      osc.type = layer.type;
+      osc.type = part.type;
       osc.frequency.value = freq;
-      osc.detune.value = layer.detune;
+      osc.detune.value = part.detune;
       const mix = ctx.createGain();
-      mix.gain.value = layer.mix;
+      mix.gain.value = part.mix;
       osc.connect(mix);
       mix.connect(env);
       oscs.push(osc);
@@ -266,9 +274,10 @@ export function createEngine(): Engine {
   // one voice here that does *not* answer to the terrain — it has no pitch to take
   // from a peak's elevation, so it runs on the revolution's own clock rather than
   // on crossings, and it is off by default.
-  function drum(kind: 'kick' | 'hat', when: number) {
+  function drum(kind: 'kick' | 'hat' | 'clap', when: number) {
     if (!ctx || !percussion) return;
     if (kind === 'kick') playKick(ctx, percussion, when, KICK_GAIN);
+    else if (kind === 'clap') playClap(ctx, percussion, when, CLAP_GAIN);
     else playHat(ctx, percussion, when, HAT_GAIN);
   }
 

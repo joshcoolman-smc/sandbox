@@ -14,7 +14,7 @@ import { useEffect, useRef, useState } from 'react';
 import { DecodeText } from '@/app/components/DecodeText';
 import { makePlaque, type Plaque } from './data/plaque';
 import { createEngine, type Engine } from './lib/audio';
-import { composeChord, composeScatter, seedToPeak } from './lib/generate';
+import { composeScatter, seedToPeak } from './lib/generate';
 import { BAND_HEX, EDGE_COLORS, NODE_COLORS, NODE_RADII } from './lib/terrain';
 import {
   BREATH_AMP,
@@ -26,17 +26,13 @@ import {
   cameraFor,
   IDLE_AFTER_MS,
   IDLE_MARGIN,
-  CLICK_BOOST,
   applyRotation,
   CLIP_BOTTOM_PAD,
   CLIP_TOP,
-  CYCLE_BOTTOM,
-  CYCLE_TOP,
   DOWN_FLOOR,
   elevOf,
   makePeak,
   MAX_PEAKS,
-  MERGE_DIST,
   PEAK_MIN_AMP,
   projectPoint,
   TILT,
@@ -51,18 +47,25 @@ import {
 } from './lib/terrain';
 import {
   bandOf,
-  BASS_TOP_DEGREE,
   clampDegree,
   ELEV_BANDS,
-  MAX_BASS_PER_WINDOW,
-  MAX_NOTES_PER_WINDOW,
+  type Layer,
+  LAYER_KEYS,
   MAX_ROTATION_STEPS,
   noteName,
   REV_MS,
   STEP_ANGLE,
+  GROUP_STEPS,
+  GROUPS_PER_REV,
+  HIGH_PER_GROUP,
+  MID_PER_GROUP,
   STEP_MS,
-  VOICE_WINDOW_MS,
+  STEPS,
+  ZONE_MID_TOP,
+  ZONE_STAGGER_JITTER,
+  ZONE_STAGGER_MS,
 } from './lib/pitch';
+import { bassFor, bassPartnerFor, chordAt, voiceFor } from './lib/harmony';
 import { meshGrid } from './meshLayout';
 import './styles.css';
 
@@ -79,6 +82,8 @@ const FLARE_MS = 340;
 // 480ms — 125bpm, the tempo the sweep was originally clocked at, with hats on the
 // offbeats between them.
 const BEAT_PER_REV = 16;
+
+
 
 // The tilt control runs backwards: hard left is the lowest, most cinematic angle
 // (the default) and pulling right raises the camera toward plan view. So the track
@@ -152,9 +157,9 @@ export default function SoundingLine() {
   const tiltRef = useRef(TILT);
   // Sound layers, in the spirit of step-sequencer's channel toggles: the pleasure
   // of that experiment was hearing the same pattern with the beat and without it.
-  // Low and high are on because they are the piece; the beat is an addition, so it
-  // starts off and is something you find.
-  const [layers, setLayers] = useState({ low: true, high: true, beat: false });
+  // The three registers are the piece, so they start on; the beat is an addition, so
+  // it starts off and is something you find.
+  const [layers, setLayers] = useState({ low: true, mid: true, high: true, beat: false });
   const layersRef = useRef(layers);
   const [muted, setMuted] = useState(false);
   const mutedRef = useRef(false);
@@ -197,7 +202,6 @@ export default function SoundingLine() {
     let edges: [number, number][] = [];
     let cx = 0;
     let cy = 0;
-    let maxRadius = 1;
     let discRadius = 1;
 
     // Sweep position is tracked in revolutions — unwrapped, fractional and
@@ -208,9 +212,15 @@ export default function SoundingLine() {
     // Last percussion division fired, so a dropped frame catches up rather than
     // silently swallowing a beat.
     let lastPulse = -1;
-    // Wall-clock times of recently sounded notes, for the rolling voice budget.
-    let recentNotes: number[] = [];
-    let recentBass: number[] = [];
+    // Last four-step group the bass bed was struck on.
+    let lastBedGroup = -1;
+    // The last four-step group each layer sounded in. One note per layer per group is
+    // the rule the whole arrangement rests on — see the group comment in lib/pitch.ts.
+    // Everything else in the group is a rest, and the rests are what make the notes
+    // that do sound seem chosen.
+    // Notes already placed in a given group per layer, so a busy stretch of terrain
+    // can't exceed the per-beat polyphony the arrangement is built on.
+    const groupUse = new Map<string, number>();
 
     // The slider's value is a target; this is where the composition actually is.
     // Everything that has to agree with what the eye sees — peak positions, the
@@ -219,6 +229,10 @@ export default function SoundingLine() {
     // reached yet.
     let rotAngle = 0;
     let liveTranspose = 0;
+    // The chord currently sounding. Held here so the marker labels and the plaque
+    // can name the note a peak would actually play right now — under the old model
+    // they printed a pitch derived from the band, which is no longer what sounds.
+    let liveChord = chordAt(0);
 
     // Tilt eases toward the slider on the same curve as rotation, so changing the
     // angle reads as the camera swinging down rather than as a cut. `view` is the
@@ -268,7 +282,6 @@ export default function SoundingLine() {
       cx = mesh.cx;
       cy = mesh.cy;
       discRadius = mesh.radius;
-      maxRadius = mesh.radius;
 
       px = new Float32Array(points.length);
       py = new Float32Array(points.length);
@@ -321,46 +334,41 @@ export default function SoundingLine() {
     window.addEventListener('pointerdown', onPointerDown);
 
     function applyClick(x: number, y: number, isBasin: boolean, timestamp: number) {
-      // One click plants a whole chord along its spoke.
-      for (const seed of composeChord(x, y, isBasin, cx, cy, discRadius)) {
-        // Landing on an existing peak stacks onto it — restacking climbs the
-        // scale, and a near miss grows a ridge instead.
-        let merged: Peak | null = null;
-        let bestD = MERGE_DIST;
-        for (const p of peaks) {
-          const d = Math.hypot(p.x - seed.x, p.y - seed.y);
-          if (d <= bestD) {
-            bestD = d;
-            merged = p;
-          }
-        }
+      // A click composes a new range rather than adding to the old one.
+      //
+      // The additive model — plant a chord, restack what you hit — was the source of
+      // three separate complaints and they were all the same complaint. Terrain grew
+      // without limit, so the camera kept retreating and summits climbed out of the
+      // frame. Clicks near the rim folded their chord inward and grew the middle
+      // instead. And density was whatever had accumulated, which meant the
+      // arrangement drifted from sparse to porridge with no way back.
+      //
+      // Generating instead fixes all three at once, and it is closer to what makes
+      // step-sequencer fun: you press the button, something new and coherent happens,
+      // and it is always in range. The count stays around a dozen, the elevations stay
+      // inside the band scale, and every click is a fresh arrangement rather than a
+      // deposit on top of the last one.
+      //
+      // The gesture still matters: the composition is anchored to the click, so a
+      // summit lands under the pointer at the distance you clicked, and the phase of
+      // the whole pattern turns with it.
+      const angle = Math.atan2(y - cy, x - cx);
+      const reach = discRadius * 0.88;
+      const frac = Math.min(1, Math.max(0.16, Math.hypot(x - cx, y - cy) / reach));
 
-        if (merged) {
-          // Restacking walks the cycle: up to the top band, reverse, down to the
-          // bottom, reverse again. Clicking one spot over and over morphs it bigger
-          // and smaller forever without anyone needing to find the shift key.
-          if (isBasin) merged.dir = -1;
-          let next = merged.target + CLICK_BOOST * merged.dir;
-          if (next >= CYCLE_TOP) {
-            next = CYCLE_TOP;
-            merged.dir = -1;
-          } else if (next <= CYCLE_BOTTOM) {
-            next = CYCLE_BOTTOM;
-            merged.dir = 1;
-          }
-          merged.target = next;
-        } else {
-          // The current rotation has to be passed, not defaulted: makePeak stores
-          // the bearing unrotated, and applyRotation adds the rotation back on the
-          // next frame. Planting at rotation 0 while the composition is turned
-          // therefore threw the chord off the pointer by the whole rotation angle.
-          peaks.push(
-            makePeak(nextId++, seed.x, seed.y, seed.amp, cx, cy, timestamp, rotAngle)
-          );
-          // Density guard — drop the oldest so the map can't silt up.
-          if (peaks.length > MAX_PEAKS) peaks.shift();
-        }
+      // The outgoing range sinks rather than vanishing, so a click reads as the
+      // landscape changing shape over ~400ms instead of as a cut. Culling happens in
+      // the frame loop once a peak's amplitude reaches nothing.
+      for (const p of peaks) p.target = 0;
+
+      for (const seed of composeScatter(cx, cy, discRadius, { angle, frac, sparse: isBasin })) {
+        // The current rotation has to be passed, not defaulted: makePeak stores the
+        // bearing unrotated and applyRotation adds the rotation back next frame.
+        // Planting at rotation 0 while the composition is turned threw peaks off the
+        // pointer by the whole rotation angle.
+        peaks.push(makePeak(nextId++, seed.x, seed.y, seed.amp, cx, cy, timestamp, rotAngle));
       }
+      if (peaks.length > MAX_PEAKS) peaks.splice(0, peaks.length - MAX_PEAKS);
 
       if (!reduced) {
         waves.push({ x, y, startTime: timestamp, amp: WAVE_AMP });
@@ -379,18 +387,28 @@ export default function SoundingLine() {
     window.addEventListener('pointerleave', onPointerLeave);
 
     // --- The sweep ----------------------------------------------------------
-    // The line glides and every peak sounds at the instant the line reaches it.
+    // The line glides; the notes land on a grid, and the pitches come from the
+    // current chord rather than from the terrain.
     //
-    // Sight and sound stay locked because the crossing is solved rather than
-    // sampled: a peak at bearing θ is crossed on revolution k at exactly
-    // originMs + (θ/2π + k) * REV_MS, which is a wall-clock moment the audio
-    // clock can be handed even though it falls between two frames. Firing on the
-    // frame the line passed the peak would flam by up to 16ms and drift audibly
-    // from the visual.
+    // Three separate decisions, and it matters that they are separate:
+    //
+    // The *line* moves continuously, because that is what makes it feel organic.
+    //
+    // The *notes* snap to sixteen divisions of the revolution. A dozen peaks firing
+    // at a dozen arbitrary moments gives the ear no downbeat to organize around; it
+    // reads as hammering however consonant each note is. A pass without the grid was
+    // tried and it was mud. Quantizing is why step-sequencer always sounds
+    // deliberate. Sight and sound still agree because the flare fires on the
+    // quantized moment too — half a step of 240ms, under a 45ms attack, is
+    // imperceptible, and far cheaper than scattering the music.
+    //
+    // The *pitch* is a voice of the chord that is currently sounding, chosen by the
+    // peak's height. See lib/harmony.ts for why elevation stopped picking
+    // frequencies directly.
     function soundCrossings(toRev: number, W: number) {
       const twoPi = Math.PI * 2;
       const transpose = liveTranspose;
-      const crossings: { p: Peak; when: number }[] = [];
+      const crossings: { p: Peak; when: number; step: number }[] = [];
 
       for (const p of peaks) {
         const phase = p.angle / twoPi;
@@ -398,7 +416,9 @@ export default function SoundingLine() {
         const k = Math.floor(toRev - phase);
         if (k < 0 || k <= p.lastRev) continue;
         p.lastRev = k;
-        crossings.push({ p, when: originMs + (phase + k) * REV_MS });
+        // Snap to the nearest division of the revolution.
+        const step = Math.round((phase + k) * STEPS);
+        crossings.push({ p, when: originMs + (step / STEPS) * REV_MS, step });
       }
       if (crossings.length === 0) return;
 
@@ -406,45 +426,98 @@ export default function SoundingLine() {
       // built and what they expect to hear.
       crossings.sort((a, b) => b.p.band - a.p.band);
 
-      for (const { p, when } of crossings) {
+      for (const { p, when, step } of crossings) {
         p.struckAt = when;
         if (!engine.ready()) continue;
 
-        // Rolling budget: pentatonic keeps any pile-up consonant, but a dense
-        // mesh still needs a ceiling on simultaneous voices. Counted over a
-        // window in time now that there are no steps to count against.
-        const windowStart = when - VOICE_WINDOW_MS;
-        const inWindow = recentNotes.filter(t => t >= windowStart);
-        if (inWindow.length >= MAX_NOTES_PER_WINDOW) continue;
+        const chord = chordAt(step / STEPS);
 
-        const degree = clampDegree(p.band + transpose);
-        const isBass = degree <= BASS_TOP_DEGREE;
-        // Layer gate. Switching a register off silences it without touching the
-        // terrain — the flare still fires, so a muted peak still visibly answers
-        // the line and the composition you can see stays whole.
-        if (isBass ? !layersRef.current.low : !layersRef.current.high) continue;
-        // Low frequencies smear long before the upper register does, so the
-        // bass gets a tighter ceiling of its own.
-        if (isBass && recentBass.filter(t => t >= windowStart).length >= MAX_BASS_PER_WINDOW) {
-          continue;
-        }
-
-        // Distant peaks hold longer than near ones, so the radius reads as
-        // sustain. The pad's own tail runs well past this either way.
-        const long = p.radius / maxRadius > 0.55;
-        const dur = ((long ? 2 : 1) * STEP_MS * 0.9) / 1000;
+        // A crossing plays a small figure, not a single note.
+        //
+        // This is the piece of step-sequencer's generator that makes it sound rich:
+        // its lead isn't one cell per hit, it's a 2-3 cell stamp stepping diagonally
+        // up the grid — which on a pentatonic row layout is an arpeggio. Without it,
+        // density here is capped by peak count rather than by anything musical: a
+        // dozen peaks over 32 steps leaves most beats empty however high the
+        // ceilings are.
+        //
+        // Figure length rides elevation, loosely: a summit runs three notes, a mound
+        // two, a bump one. That is the whole of the height mapping on this side — it
+        // is felt rather than computed, and the top note of a tall figure jumps the
+        // octave so summits sparkle.
+        const figure = 1 + Math.min(2, Math.floor(p.band / 6));
+        const tall = p.band > ZONE_MID_TOP;
         const pan = Math.max(-MAX_PAN, Math.min(MAX_PAN, ((p.x - W / 2) / (W / 2)) * MAX_PAN));
-        engine.note(degree, engine.at(when), dur, pan);
+        const dur = (STEP_MS * 1.6) / 1000;
+        // Fixed lean per peak, from its bearing — a figure that flams differently
+        // every pass reads as sloppy timing, one that always leans the same way reads
+        // as that peak's character.
+        const swing = ((p.angle / twoPi) % 1) * ZONE_STAGGER_JITTER * ZONE_STAGGER_MS;
 
-        recentNotes.push(when);
-        if (isBass) recentBass.push(when);
+        for (let i = 0; i < figure; i++) {
+          const top = i === figure - 1;
+          const layer: Layer = tall && top ? 'high' : 'mid';
+          if (!layersRef.current[layer]) continue;
+
+          // Successive notes step up the chord, one grid step apart — the diagonal.
+          const noteStep = step + i;
+          const g = Math.floor(noteStep / GROUP_STEPS);
+          const key = `${g}:${layer}`;
+          const cap = layer === 'high' ? HIGH_PER_GROUP : MID_PER_GROUP;
+          const used = groupUse.get(key) ?? 0;
+          if (used >= cap) continue;
+          groupUse.set(key, used + 1);
+          if (groupUse.size > 128) groupUse.clear();
+
+          const degree = voiceFor(p.band, chord, layer === 'high') + i;
+          const at = originMs + (noteStep / STEPS) * REV_MS + swing;
+          engine.note(layer, clampDegree(degree + transpose), engine.at(at), dur, pan);
+        }
       }
+    }
 
-      // Trim the budget history to the window that can still matter.
-      if (recentNotes.length > 32) {
-        const cutoff = originMs + toRev * REV_MS - VOICE_WINDOW_MS * 2;
-        recentNotes = recentNotes.filter(t => t >= cutoff);
-        recentBass = recentBass.filter(t => t >= cutoff);
+    // The bass bed.
+    //
+    // LOW is no longer "peaks that happen to be low" — that set was almost always
+    // empty, since a click roots its chord at band 9 and only a shift-click basin
+    // ever lands beneath band 3. The toggle promised a register and delivered
+    // silence.
+    //
+    // Instead LOW *is* the bed: the root of the current chord, struck once per group
+    // of four steps — four times a pass, one per bar-ish. One note per revolution was
+    // the first attempt and it was a drone, not a bass line: held 3s with a 2.4s tail
+    // against a 3.84s spacing, every note began inside the tail of the one before it,
+    // and across a chord change two different roots overlapped. Nothing to count.
+    //
+    // It belongs to the harmony's clock rather than to the terrain, which is why it
+    // works — a root arriving on the beat is what tells the ear that everything above
+    // it is a chord rather than a pile of notes. It is also the one voice that should
+    // not change when you sculpt.
+    function soundBed(toRev: number) {
+      const group = Math.floor(toRev * GROUPS_PER_REV);
+      if (!engine.ready() || !layersRef.current.low) {
+        // Keep the counter current while the layer is off, so switching it back on
+        // starts at the next downbeat instead of firing a backlog.
+        lastBedGroup = group;
+        return;
+      }
+      while (lastBedGroup < group) {
+        lastBedGroup++;
+        const beat = lastBedGroup / GROUPS_PER_REV;
+        const when = originMs + beat * REV_MS;
+        const chord = chordAt(beat);
+        // Root on the beat, fifth one step behind it — the staggered pair that makes
+        // a low end roll instead of pedal. Each stops short of the next, so they stay
+        // countable.
+        const hold = (STEP_MS * 1.4) / 1000;
+        engine.note('low', clampDegree(bassFor(chord) + liveTranspose), engine.at(when), hold, 0);
+        engine.note(
+          'low',
+          clampDegree(bassPartnerFor(chord) + liveTranspose),
+          engine.at(when + STEP_MS),
+          hold,
+          0
+        );
       }
     }
 
@@ -461,9 +534,16 @@ export default function SoundingLine() {
       while (lastPulse < pulse) {
         lastPulse++;
         const when = originMs + (lastPulse / BEAT_PER_REV) * REV_MS;
-        const at = engine.at(when);
-        if (lastPulse % 2 === 0) engine.drum('kick', at);
-        else engine.drum('hat', at);
+        const slot = ((lastPulse % GROUP_STEPS) + GROUP_STEPS) % GROUP_STEPS;
+        const beat = Math.floor(lastPulse / GROUP_STEPS) % GROUPS_PER_REV;
+        // Kick on every beat, hat on the offbeat behind it, clap on beats 2 and 6 —
+        // the backbeat. Straight out of what step-sequencer's generator writes.
+        if (slot === 0) {
+          engine.drum('kick', engine.at(when));
+          if (beat === 2 || beat === 6) engine.drum('clap', engine.at(when));
+        } else if (slot === 2) {
+          engine.drum('hat', engine.at(when));
+        }
       }
     }
 
@@ -530,7 +610,7 @@ export default function SoundingLine() {
         ctx.closePath();
         ctx.fill();
 
-        const label = noteName(clampDegree(p.band + liveTranspose));
+        const label = noteName(clampDegree(voiceFor(p.band, liveChord, false) + liveTranspose));
         const lx = sx + 9;
         // Dark plate behind the type so it stays readable over bright terrain.
         const w = ctx.measureText(label).width;
@@ -646,6 +726,8 @@ export default function SoundingLine() {
       // dropped frame still fires its notes at their true moments instead of
       // bunching them onto the recovery frame.
       revs = (timestamp - originMs) / REV_MS;
+      liveChord = chordAt(revs);
+      soundBed(revs);
       soundCrossings(revs, W);
       soundBeat(revs);
 
@@ -804,7 +886,15 @@ export default function SoundingLine() {
             left: pos.left,
             top: pos.top,
             flipped: pos.flipped,
-            plaque: makePlaque(p.x, p.y, W, H, p.band, p.amp, clampDegree(p.band + liveTranspose)),
+            plaque: makePlaque(
+              p.x,
+              p.y,
+              W,
+              H,
+              p.band,
+              p.amp,
+              clampDegree(voiceFor(p.band, liveChord, false) + liveTranspose)
+            ),
           });
         }
         drawLeader(foundX, foundY, W, H);
@@ -842,7 +932,7 @@ export default function SoundingLine() {
       <div className="sl-controls">
         {!audioLive && !muted && <span className="sl-muted">CLICK TO START</span>}
         <div className="sl-layers">
-          {(['low', 'high', 'beat'] as const).map(key => (
+          {([...LAYER_KEYS, 'beat'] as const).map(key => (
             <button
               key={key}
               type="button"
